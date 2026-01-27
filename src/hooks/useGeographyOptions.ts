@@ -1,6 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Complete list of European countries for the country dropdown
+const EUROPEAN_COUNTRIES = [
+  'Albania', 'Andorra', 'Austria', 'Belarus', 'Belgium', 'Bosnia and Herzegovina',
+  'Bulgaria', 'Croatia', 'Cyprus', 'Czech Republic', 'Denmark', 'Estonia',
+  'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Iceland', 'Ireland',
+  'Italy', 'Kosovo', 'Latvia', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+  'Malta', 'Moldova', 'Monaco', 'Montenegro', 'Morocco', 'Netherlands',
+  'North Macedonia', 'Norway', 'Poland', 'Portugal', 'Romania', 'Russia',
+  'San Marino', 'Serbia', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
+  'Switzerland', 'Turkey', 'Ukraine', 'United Kingdom', 'Vatican City',
+];
+
 interface GeographyOptions {
   countries: string[];
   provinces: string[];
@@ -8,34 +20,19 @@ interface GeographyOptions {
 }
 
 /**
- * Fetches distinct geographic values from the pharmacies table.
- * Respects strict hierarchy: Province options depend on selected Country,
- * City options depend on selected Province (and Country).
+ * Fetches geographic options for pharmacy filters.
+ * - Countries: Shows ALL European countries (reference list)
+ * - Provinces: Fetched from DB for selected country
+ * - Cities: Fetched from DB for selected province
+ * 
+ * This ensures Country dropdown is always complete while Province/City
+ * are dynamically populated based on real pharmacy data.
  */
 export function useGeographyOptions(selectedCountry: string, selectedProvince: string) {
-  // Fetch all distinct countries
-  const countriesQuery = useQuery({
-    queryKey: ['geography', 'countries'],
-    queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase
-        .from('pharmacies')
-        .select('country')
-        .not('country', 'is', null)
-        .order('country');
+  // Countries: Use static European list (always complete)
+  const countries = EUROPEAN_COUNTRIES;
 
-      if (error) {
-        console.error('Error fetching countries:', error);
-        throw error;
-      }
-
-      // Deduplicate and filter empty
-      const unique = [...new Set((data || []).map((d) => d.country).filter(Boolean))] as string[];
-      return unique.sort((a, b) => a.localeCompare(b));
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Fetch provinces for selected country
+  // Fetch provinces for selected country from database
   const provincesQuery = useQuery({
     queryKey: ['geography', 'provinces', selectedCountry],
     queryFn: async (): Promise<string[]> => {
@@ -92,9 +89,9 @@ export function useGeographyOptions(selectedCountry: string, selectedProvince: s
   });
 
   return {
-    countries: countriesQuery.data || [],
+    countries,
     provinces: provincesQuery.data || [],
     cities: citiesQuery.data || [],
-    isLoading: countriesQuery.isLoading || provincesQuery.isLoading || citiesQuery.isLoading,
+    isLoading: provincesQuery.isLoading || citiesQuery.isLoading,
   };
 }
