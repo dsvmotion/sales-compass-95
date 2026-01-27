@@ -82,19 +82,41 @@ export function usePharmaciesWithOrders() {
   const { data: documents = [], isLoading: docsLoading } = usePharmacyDocuments();
 
   const pharmaciesWithOrders: PharmacyWithOrders[] = pharmacies.map((pharmacy) => {
-    // Match orders by pharmacy name (case-insensitive partial match)
-    const pharmacyOrders = orders.filter(order => {
-      const orderName = order.customerName.toLowerCase();
-      const pharmacyName = pharmacy.name.toLowerCase();
-      return orderName.includes(pharmacyName) || pharmacyName.includes(orderName);
-    });
+    // STRICT matching: Only match orders if the pharmacy is marked as 'client'
+    // AND the order customer name matches the pharmacy name with high confidence
+    let pharmacyOrders: DetailedOrder[] = [];
+    
+    // Only attempt to match orders for pharmacies that are clients
+    // Non-contacted and contacted pharmacies should NEVER have orders
+    if (pharmacy.commercial_status === 'client') {
+      pharmacyOrders = orders.filter(order => {
+        const orderName = order.customerName.toLowerCase().trim();
+        const pharmacyName = pharmacy.name.toLowerCase().trim();
+        
+        // Require strong match:
+        // 1. Exact match, OR
+        // 2. Order name starts with pharmacy name (or vice versa) with at least 80% length overlap
+        if (orderName === pharmacyName) return true;
+        
+        // Check if one is a significant substring of the other
+        const minLength = Math.min(orderName.length, pharmacyName.length);
+        const maxLength = Math.max(orderName.length, pharmacyName.length);
+        
+        // Only match if the shorter string is at least 80% of the longer one
+        if (minLength / maxLength < 0.8) return false;
+        
+        // And one must contain the other
+        return orderName.includes(pharmacyName) || pharmacyName.includes(orderName);
+      });
+    }
 
     // Sort orders by date (newest first)
     const sortedOrders = [...pharmacyOrders].sort(
       (a, b) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
     );
 
-    const lastOrder = sortedOrders[0] || null;
+    // Only set lastOrder if there are REAL matched orders
+    const lastOrder = sortedOrders.length > 0 ? sortedOrders[0] : null;
     const totalRevenue = pharmacyOrders.reduce((sum, o) => sum + o.amount, 0);
 
     // Check for documents
