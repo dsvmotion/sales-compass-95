@@ -12,6 +12,28 @@ interface ProspectingMapProps {
   center?: { lat: number; lng: number };
 }
 
+// Debounce utility
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T & { cancel: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  
+  const debouncedFn = ((...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn(...args);
+      timeoutId = null;
+    }, delay);
+  }) as T & { cancel: () => void };
+  
+  debouncedFn.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+  
+  return debouncedFn;
+}
+
 export function ProspectingMap({
   pharmacies,
   selectedPharmacyId,
@@ -25,6 +47,8 @@ export function ProspectingMap({
   const markersRef = useRef<google.maps.Marker[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const isUserInteracting = useRef(false);
+  const debouncedBoundsChanged = useRef<ReturnType<typeof debounce> | null>(null);
 
   const getMarkerIcon = useCallback((pharmacy: Pharmacy, isSelected: boolean) => {
     const color = STATUS_COLORS[pharmacy.commercial_status].pin;
@@ -84,19 +108,32 @@ export function ProspectingMap({
     infoWindowRef.current = new google.maps.InfoWindow();
     setIsMapReady(true);
     
-    // Set up bounds changed listener for dynamic loading
+    // Track user interaction start
+    map.addListener('dragstart', () => {
+      isUserInteracting.current = true;
+    });
+    
+    map.addListener('zoom_changed', () => {
+      isUserInteracting.current = true;
+    });
+    
+    // Airbnb-style: Only trigger search when interaction ENDS (idle event)
+    // with proper debouncing to prevent rapid-fire calls
     if (onBoundsChanged) {
-      let debounceTimer: ReturnType<typeof setTimeout>;
+      // Create debounced handler - 800ms delay after map becomes idle
+      debouncedBoundsChanged.current = debounce((bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => {
+        if (isUserInteracting.current) {
+          isUserInteracting.current = false;
+          onBoundsChanged(bounds, center);
+        }
+      }, 800);
       
       map.addListener('idle', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          const bounds = map.getBounds();
-          const center = map.getCenter();
-          if (bounds && center) {
-            onBoundsChanged(bounds, center);
-          }
-        }, 500); // Debounce 500ms
+        const bounds = map.getBounds();
+        const center = map.getCenter();
+        if (bounds && center && debouncedBoundsChanged.current) {
+          debouncedBoundsChanged.current(bounds, center);
+        }
       });
     }
     
@@ -114,7 +151,7 @@ export function ProspectingMap({
     });
     markersRef.current = [];
 
-    // Create new markers using standard Marker (not AdvancedMarkerElement)
+    // Create new markers
     pharmacies.forEach((pharmacy) => {
       const isSelected = pharmacy.id === selectedPharmacyId;
       
@@ -190,6 +227,10 @@ export function ProspectingMap({
     document.head.appendChild(script);
 
     return () => {
+      // Clean up debounced function
+      if (debouncedBoundsChanged.current) {
+        debouncedBoundsChanged.current.cancel();
+      }
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }

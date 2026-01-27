@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useRef, useEffect, forwardRef } from 'react';
+import { useCallback, useMemo, useRef, useEffect, forwardRef, useState } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
-import { Sale } from '@/data/mockSales';
-import { useState } from 'react';
+import { Sale } from '@/types/sale';
 
 interface SalesMapProps {
   sales: Sale[];
