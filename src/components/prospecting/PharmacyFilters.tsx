@@ -8,27 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlacesAutocomplete } from '@/components/ui/places-autocomplete';
 import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
-
-// European country codes for Google Places restrictions
-const EUROPEAN_COUNTRY_CODES: Record<string, string> = {
-  'Albania': 'al', 'Andorra': 'ad', 'Austria': 'at', 'Belarus': 'by', 'Belgium': 'be',
-  'Bosnia and Herzegovina': 'ba', 'Bulgaria': 'bg', 'Croatia': 'hr', 'Cyprus': 'cy',
-  'Czech Republic': 'cz', 'Denmark': 'dk', 'Estonia': 'ee', 'Finland': 'fi', 'France': 'fr',
-  'Germany': 'de', 'Greece': 'gr', 'Hungary': 'hu', 'Iceland': 'is', 'Ireland': 'ie',
-  'Italy': 'it', 'Kosovo': 'xk', 'Latvia': 'lv', 'Liechtenstein': 'li', 'Lithuania': 'lt',
-  'Luxembourg': 'lu', 'Malta': 'mt', 'Moldova': 'md', 'Monaco': 'mc', 'Montenegro': 'me',
-  'Morocco': 'ma', 'Netherlands': 'nl', 'North Macedonia': 'mk', 'Norway': 'no', 'Poland': 'pl',
-  'Portugal': 'pt', 'Romania': 'ro', 'Russia': 'ru', 'San Marino': 'sm', 'Serbia': 'rs',
-  'Slovakia': 'sk', 'Slovenia': 'si', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
-  'Turkey': 'tr', 'Ukraine': 'ua', 'United Kingdom': 'gb', 'Vatican City': 'va',
-};
 
 interface PharmacyFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   countries: string[];
+  provinces: string[];
+  cities: string[];
   onClearFilters: () => void;
   onSearch: () => void;
   isSearching: boolean;
@@ -39,15 +26,14 @@ export function PharmacyFilters({
   filters,
   onFiltersChange,
   countries,
+  provinces,
+  cities,
   onClearFilters,
   onSearch,
   isSearching,
   isLoadingOptions,
 }: PharmacyFiltersProps) {
   const hasActiveGeoFilter = filters.country !== '' || filters.province !== '' || filters.city !== '';
-  
-  // Get country code for Google Places restriction
-  const countryCode = filters.country ? EUROPEAN_COUNTRY_CODES[filters.country] : undefined;
 
   return (
     <div className="space-y-3">
@@ -57,8 +43,8 @@ export function PharmacyFilters({
         onValueChange={(value) => onFiltersChange({ 
           ...filters, 
           country: value === 'all' ? '' : value,
-          province: '', // Reset province when country changes
-          city: '' // Reset city when country changes
+          province: '',
+          city: ''
         })}
       >
         <SelectTrigger className="bg-white border-gray-300 text-gray-900">
@@ -74,33 +60,50 @@ export function PharmacyFilters({
         </SelectContent>
       </Select>
 
-      {/* Province - Google Places Autocomplete */}
-      <PlacesAutocomplete
-        value={filters.province}
-        onChange={(value) => onFiltersChange({ 
+      {/* Province - Dropdown from database */}
+      <Select
+        value={filters.province || 'all'}
+        onValueChange={(value) => onFiltersChange({ 
           ...filters, 
-          province: value,
-          city: '' // Reset city when province changes
+          province: value === 'all' ? '' : value,
+          city: ''
         })}
-        placeholder={filters.country ? 'Search province/region...' : 'Select country first'}
-        types={['administrative_area_level_1']}
-        componentRestrictions={countryCode ? { country: countryCode } : undefined}
         disabled={!filters.country}
-        icon={<MapPin className="h-4 w-4" />}
-      />
+      >
+        <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
+          <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Select Province' : 'No provinces found') : 'Select Country first'} />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
+          <SelectItem value="all">All Provinces</SelectItem>
+          {provinces.map((province) => (
+            <SelectItem key={province} value={province}>
+              {province}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      {/* City - Google Places Autocomplete */}
-      <PlacesAutocomplete
-        value={filters.city}
-        onChange={(value) => onFiltersChange({ ...filters, city: value })}
-        placeholder={filters.country ? 'Search city...' : 'Select country first'}
-        types={['locality', 'sublocality']}
-        componentRestrictions={countryCode ? { country: countryCode } : undefined}
-        disabled={!filters.country}
-        icon={<MapPin className="h-4 w-4" />}
-      />
+      {/* City - Dropdown from database */}
+      <Select
+        value={filters.city || 'all'}
+        onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
+        disabled={!filters.province}
+      >
+        <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
+          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+          <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'Select City' : 'No cities found') : 'Select Province first'} />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
+          <SelectItem value="all">All Cities</SelectItem>
+          {cities.map((city) => (
+            <SelectItem key={city} value={city}>
+              {city}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      {/* Search Button - Triggers pharmacy search */}
+      {/* Search Button */}
       <Button
         onClick={onSearch}
         disabled={!hasActiveGeoFilter || isSearching}
@@ -130,7 +133,7 @@ export function PharmacyFilters({
         />
       </div>
 
-      {/* Status filter - Filter already loaded results */}
+      {/* Status filter */}
       <Select
         value={filters.status}
         onValueChange={(value) => onFiltersChange({ ...filters, status: value as PharmacyStatus | 'all' })}
