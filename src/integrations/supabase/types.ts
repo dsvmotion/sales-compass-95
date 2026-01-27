@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pharmacies: {
+        Row: {
+          address: string | null
+          city: string | null
+          commercial_status: Database["public"]["Enums"]["pharmacy_status"]
+          country: string | null
+          created_at: string
+          email: string | null
+          google_data: Json | null
+          google_place_id: string
+          id: string
+          lat: number
+          lng: number
+          name: string
+          notes: string | null
+          opening_hours: Json | null
+          phone: string | null
+          province: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          commercial_status?: Database["public"]["Enums"]["pharmacy_status"]
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          google_data?: Json | null
+          google_place_id: string
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          notes?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          province?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          commercial_status?: Database["public"]["Enums"]["pharmacy_status"]
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          google_data?: Json | null
+          google_place_id?: string
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          notes?: string | null
+          opening_hours?: Json | null
+          phone?: string | null
+          province?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +85,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      pharmacy_status: "not_contacted" | "contacted" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +212,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      pharmacy_status: ["not_contacted", "contacted", "client"],
+    },
   },
 } as const

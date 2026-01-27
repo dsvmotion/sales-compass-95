@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Building2, DollarSign, ShoppingBag, User, RefreshCw, AlertCircle } from 'lucide-react';
+import { Building2, DollarSign, ShoppingBag, User, RefreshCw, AlertCircle, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { SalesMap } from '@/components/SalesMap';
 import { StatCard } from '@/components/StatCard';
@@ -34,7 +35,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-[1600px] mx-auto">
-        <Header showHeatmap={showHeatmap} onHeatmapToggle={setShowHeatmap} />
+        <div className="flex items-center justify-between mb-6">
+          <Header showHeatmap={showHeatmap} onHeatmapToggle={setShowHeatmap} />
+          <Link to="/prospecting">
+            <Button variant="outline" className="gap-2">
+              <MapPin className="h-4 w-4" />
+              Pharmacy Prospecting
+            </Button>
+          </Link>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
