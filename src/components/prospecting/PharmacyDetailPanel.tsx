@@ -15,14 +15,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Pharmacy, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
-import { PharmacyStatusBadge } from './PharmacyStatusBadge';
 import { useUpdatePharmacy } from '@/hooks/usePharmacies';
 import { useOrdersByPharmacy } from '@/hooks/useWooCommerceOrders';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface PharmacyDetailPanelProps {
   pharmacy: Pharmacy;
   onClose: () => void;
+}
+
+function StatusBadge({ status }: { status: PharmacyStatus }) {
+  const styles = {
+    not_contacted: 'bg-gray-100 text-gray-600',
+    contacted: 'bg-gray-200 text-gray-700',
+    client: 'bg-gray-800 text-white',
+  };
+
+  return (
+    <span className={cn('px-2 py-0.5 rounded text-xs font-medium', styles[status])}>
+      {STATUS_LABELS[status]}
+    </span>
+  );
 }
 
 export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelProps) {
@@ -83,16 +97,16 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
   };
 
   return (
-    <div className="h-full flex flex-col bg-card border-l border-border">
+    <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-start justify-between gap-4">
+      <div className="p-4 border-b border-gray-200 flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-lg leading-tight mb-2 truncate">
+          <h2 className="font-semibold text-lg leading-tight mb-2 truncate text-gray-900">
             {pharmacy.name}
           </h2>
-          <PharmacyStatusBadge status={status} />
+          <StatusBadge status={status} />
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -101,49 +115,49 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Order History from WooCommerce - Real Data Only */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
             Order History (WooCommerce)
           </h3>
           
           {relatedOrders.length === 0 ? (
-            <div className="bg-secondary/50 rounded-lg p-4 text-center">
-              <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">No sales data</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <div className="bg-gray-50 rounded-lg p-4 text-center border border-gray-200">
+              <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">No sales data</p>
+              <p className="text-xs text-gray-400 mt-1">
                 No WooCommerce orders found for this pharmacy
               </p>
             </div>
           ) : (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-primary/10 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">{orderStats.totalOrders}</p>
-                  <p className="text-xs text-muted-foreground">Total Orders</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-gray-900">{orderStats.totalOrders}</p>
+                  <p className="text-xs text-gray-500">Total Orders</p>
                 </div>
-                <div className="bg-primary/10 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">€{orderStats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total Revenue</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-gray-900">€{orderStats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">Total Revenue</p>
                 </div>
               </div>
               
               <div className="space-y-1 mt-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Recent Orders:</p>
+                <p className="text-xs font-medium text-gray-500 mb-2">Recent Orders:</p>
                 {relatedOrders.slice(0, 5).map((order) => (
-                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{order.orderId}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-gray-900">{order.orderId}</p>
+                      <p className="text-xs text-gray-500">
                         {new Date(order.date).toLocaleDateString()}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-primary">
+                    <span className="text-sm font-semibold text-gray-900">
                       €{order.amount.toLocaleString()}
                     </span>
                   </div>
                 ))}
                 {relatedOrders.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center pt-2">
+                  <p className="text-xs text-gray-500 text-center pt-2">
                     +{relatedOrders.length - 5} more orders
                   </p>
                 )}
@@ -154,15 +168,15 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
         {/* Location Info */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
+          <h3 className="text-sm font-medium text-gray-500">Location</h3>
           
           {pharmacy.address && (
             <div className="flex items-start gap-3 group">
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <MapPin className="h-4 w-4 mt-0.5 text-gray-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm">{pharmacy.address}</p>
+                <p className="text-sm text-gray-700">{pharmacy.address}</p>
                 {(pharmacy.city || pharmacy.province) && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {[pharmacy.city, pharmacy.province, pharmacy.country].filter(Boolean).join(', ')}
                   </p>
                 )}
@@ -173,20 +187,20 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
         {/* Contact Info */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Contact</h3>
+          <h3 className="text-sm font-medium text-gray-500">Contact</h3>
           
           {pharmacy.phone && (
             <div className="flex items-center gap-3 group">
-              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm flex-1">{pharmacy.phone}</span>
+              <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+              <span className="text-sm flex-1 text-gray-700">{pharmacy.phone}</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500"
                 onClick={() => copyToClipboard(pharmacy.phone!, 'phone')}
               >
                 {copiedField === 'phone' ? (
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-gray-700" />
                 ) : (
                   <Copy className="h-3 w-3" />
                 )}
@@ -196,12 +210,12 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
           {pharmacy.website && (
             <div className="flex items-center gap-3 group">
-              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Globe className="h-4 w-4 text-gray-400 shrink-0" />
               <a
                 href={pharmacy.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline flex items-center gap-1 flex-1 truncate"
+                className="text-sm text-gray-700 hover:text-gray-900 flex items-center gap-1 flex-1 truncate"
               >
                 {new URL(pharmacy.website).hostname}
                 <ExternalLink className="h-3 w-3" />
@@ -211,7 +225,7 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
           {/* Email Field (editable) */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Label htmlFor="email" className="flex items-center gap-2 text-xs text-gray-500">
               <Mail className="h-3 w-3" />
               Email (manually added)
             </Label>
@@ -222,14 +236,14 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
                 placeholder="Add email..."
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
-                className="h-8 text-sm"
+                className="h-8 text-sm bg-white border-gray-300"
               />
               {email && (
                 <a
                   href={`mailto:${email}`}
                   className="shrink-0"
                 >
-                  <Button variant="outline" size="sm" className="h-8">
+                  <Button variant="outline" size="sm" className="h-8 border-gray-300">
                     <Mail className="h-3 w-3" />
                   </Button>
                 </a>
@@ -241,13 +255,13 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
         {/* Opening Hours */}
         {pharmacy.opening_hours && pharmacy.opening_hours.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Opening Hours
             </h3>
             <div className="text-xs space-y-1 pl-6">
               {pharmacy.opening_hours.map((hours, index) => (
-                <p key={index} className="text-muted-foreground">{hours}</p>
+                <p key={index} className="text-gray-600">{hours}</p>
               ))}
             </div>
           </div>
@@ -255,12 +269,12 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
         {/* Commercial Status */}
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Commercial Status</h3>
+          <h3 className="text-sm font-medium text-gray-500">Commercial Status</h3>
           <Select value={status} onValueChange={handleStatusChange}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-white border-gray-300">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border-gray-200">
               {(Object.keys(STATUS_LABELS) as PharmacyStatus[]).map((s) => (
                 <SelectItem key={s} value={s}>
                   {STATUS_LABELS[s]}
@@ -272,7 +286,7 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
         {/* Notes */}
         <div className="space-y-3">
-          <Label htmlFor="notes" className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Label htmlFor="notes" className="text-sm font-medium text-gray-500 flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Internal Notes
           </Label>
@@ -281,18 +295,18 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
             placeholder="Add notes about this pharmacy..."
             value={notes}
             onChange={(e) => handleNotesChange(e.target.value)}
-            className="min-h-[100px] resize-none"
+            className="min-h-[100px] resize-none bg-white border-gray-300"
           />
         </div>
       </div>
 
       {/* Footer */}
       {hasChanges && (
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-gray-200">
           <Button
             onClick={handleSave}
             disabled={updatePharmacy.isPending}
-            className="w-full"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
           >
             <Save className="h-4 w-4 mr-2" />
             {updatePharmacy.isPending ? 'Saving...' : 'Save Changes'}

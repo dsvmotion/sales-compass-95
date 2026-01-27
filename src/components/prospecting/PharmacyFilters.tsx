@@ -38,12 +38,12 @@ export function PharmacyFilters({
     <div className="space-y-3">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Search pharmacies..."
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          className="pl-10 bg-background/50"
+          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
         />
       </div>
 
@@ -51,13 +51,13 @@ export function PharmacyFilters({
       <div className="grid grid-cols-2 gap-2">
         {/* Country */}
         <Select
-          value={filters.country}
+          value={filters.country || 'all'}
           onValueChange={(value) => onFiltersChange({ ...filters, country: value === 'all' ? '' : value })}
         >
-          <SelectTrigger className="bg-background/50">
+          <SelectTrigger className="bg-white border-gray-300 text-gray-900">
             <SelectValue placeholder="Country" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white border-gray-200">
             <SelectItem value="all">All Countries</SelectItem>
             {countries.map((country) => (
               <SelectItem key={country} value={country}>
@@ -67,38 +67,38 @@ export function PharmacyFilters({
           </SelectContent>
         </Select>
 
-        {/* City */}
+        {/* Province */}
         <Select
-          value={filters.city}
-          onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
+          value={filters.province || 'all'}
+          onValueChange={(value) => onFiltersChange({ ...filters, province: value === 'all' ? '' : value })}
         >
-          <SelectTrigger className="bg-background/50">
-            <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-            <SelectValue placeholder="City" />
+          <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+            <SelectValue placeholder="Province" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Cities</SelectItem>
-            {cities.map((city) => (
-              <SelectItem key={city} value={city}>
-                {city}
+          <SelectContent className="bg-white border-gray-200">
+            <SelectItem value="all">All Provinces</SelectItem>
+            {provinces.map((province) => (
+              <SelectItem key={province} value={province}>
+                {province}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        {/* Province */}
+        {/* City */}
         <Select
-          value={filters.province}
-          onValueChange={(value) => onFiltersChange({ ...filters, province: value === 'all' ? '' : value })}
+          value={filters.city || 'all'}
+          onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
         >
-          <SelectTrigger className="bg-background/50">
-            <SelectValue placeholder="Province" />
+          <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+            <SelectValue placeholder="City" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Provinces</SelectItem>
-            {provinces.map((province) => (
-              <SelectItem key={province} value={province}>
-                {province}
+          <SelectContent className="bg-white border-gray-200">
+            <SelectItem value="all">All Cities</SelectItem>
+            {cities.map((city) => (
+              <SelectItem key={city} value={city}>
+                {city}
               </SelectItem>
             ))}
           </SelectContent>
@@ -109,11 +109,11 @@ export function PharmacyFilters({
           value={filters.status}
           onValueChange={(value) => onFiltersChange({ ...filters, status: value as PharmacyStatus | 'all' })}
         >
-          <SelectTrigger className="bg-background/50">
-            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+          <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+            <Filter className="h-4 w-4 mr-2 text-gray-400" />
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white border-gray-200">
             <SelectItem value="all">All Statuses</SelectItem>
             {(Object.keys(STATUS_LABELS) as PharmacyStatus[]).map((status) => (
               <SelectItem key={status} value={status}>
@@ -130,7 +130,7 @@ export function PharmacyFilters({
           variant="ghost"
           size="sm"
           onClick={onClearFilters}
-          className="w-full text-muted-foreground"
+          className="w-full text-gray-500 hover:text-gray-700"
         >
           <X className="h-4 w-4 mr-2" />
           Clear Filters

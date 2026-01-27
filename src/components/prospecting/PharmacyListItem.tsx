@@ -1,6 +1,5 @@
 import { MapPin, Phone, Globe } from 'lucide-react';
 import { Pharmacy } from '@/types/pharmacy';
-import { PharmacyStatusBadge } from './PharmacyStatusBadge';
 import { cn } from '@/lib/utils';
 
 interface PharmacyListItemProps {
@@ -9,34 +8,53 @@ interface PharmacyListItemProps {
   onClick: () => void;
 }
 
+function StatusBadge({ status }: { status: 'not_contacted' | 'contacted' | 'client' }) {
+  const styles = {
+    not_contacted: 'bg-gray-100 text-gray-600',
+    contacted: 'bg-gray-200 text-gray-700',
+    client: 'bg-gray-800 text-white',
+  };
+
+  const labels = {
+    not_contacted: 'Not Contacted',
+    contacted: 'Contacted',
+    client: 'Client',
+  };
+
+  return (
+    <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', styles[status])}>
+      {labels[status]}
+    </span>
+  );
+}
+
 export function PharmacyListItem({ pharmacy, isSelected, onClick }: PharmacyListItemProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
         'p-3 rounded-lg border cursor-pointer transition-all',
-        'hover:border-primary/50 hover:bg-primary/5',
         isSelected 
-          ? 'border-primary bg-primary/10 ring-1 ring-primary/30' 
-          : 'border-border bg-card'
+          ? 'border-gray-400 bg-gray-100' 
+          : 'border-gray-200 bg-white hover:bg-gray-50'
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-sm leading-tight truncate flex-1">
+        <h3 className="font-semibold text-sm leading-tight truncate flex-1 text-gray-900">
           {pharmacy.name}
         </h3>
-        <PharmacyStatusBadge status={pharmacy.commercial_status} size="sm" />
+        <StatusBadge status={pharmacy.commercial_status} />
       </div>
       
       <div className="space-y-1">
         {pharmacy.address && (
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+          <div className="flex items-start gap-2 text-xs text-gray-500">
             <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
             <span className="truncate">{pharmacy.address}</span>
           </div>
         )}
         
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-gray-500">
           {pharmacy.city && (
             <span className="truncate">{pharmacy.city}</span>
           )}
@@ -49,7 +67,7 @@ export function PharmacyListItem({ pharmacy, isSelected, onClick }: PharmacyList
         </div>
         
         {pharmacy.website && (
-          <div className="flex items-center gap-1 text-xs text-primary">
+          <div className="flex items-center gap-1 text-xs text-gray-600">
             <Globe className="h-3 w-3" />
             <span className="truncate">Website</span>
           </div>
