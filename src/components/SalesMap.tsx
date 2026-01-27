@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.heat';
@@ -35,12 +35,52 @@ const createMarkerIcon = (type: 'pharmacy' | 'client') => {
 const pharmacyIcon = createMarkerIcon('pharmacy');
 const clientIcon = createMarkerIcon('client');
 
+// Map initialization and resize handler
+function MapInitializer({ sales }: { sales: Sale[] }) {
+  const map = useMap();
+  const hasInitialized = useRef(false);
+  
+  useEffect(() => {
+    // Force a resize check after map mounts
+    const resizeMap = () => {
+      map.invalidateSize({ animate: false });
+      
+      // Fit to data bounds on first load
+      if (!hasInitialized.current && sales.length > 0) {
+        const bounds = L.latLngBounds(sales.map(s => [s.lat, s.lng] as L.LatLngTuple));
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+          hasInitialized.current = true;
+        }
+      }
+    };
+    
+    // Multiple resize calls to handle async container sizing
+    resizeMap();
+    const t1 = setTimeout(resizeMap, 100);
+    const t2 = setTimeout(resizeMap, 300);
+    const t3 = setTimeout(resizeMap, 600);
+    
+    window.addEventListener('resize', resizeMap);
+    
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener('resize', resizeMap);
+    };
+  }, [map, sales]);
+  
+  return null;
+}
+
 // Heatmap layer component
 function HeatmapLayer({ sales, show }: { sales: Sale[]; show: boolean }) {
   const map = useMap();
   const heatLayerRef = useRef<L.Layer | null>(null);
 
   useEffect(() => {
+    // Clean up existing layer
     if (heatLayerRef.current) {
       map.removeLayer(heatLayerRef.current);
       heatLayerRef.current = null;
@@ -50,19 +90,23 @@ function HeatmapLayer({ sales, show }: { sales: Sale[]; show: boolean }) {
       const heatData: [number, number, number][] = sales.map(sale => [
         sale.lat,
         sale.lng,
-        sale.amount / 1000, // Intensity based on amount
+        Math.max(sale.amount / 300, 1),
       ]);
 
+      console.log('Creating heatmap with', heatData.length, 'points');
+
       heatLayerRef.current = L.heatLayer(heatData, {
-        radius: 35,
-        blur: 25,
-        maxZoom: 10,
-        max: 3,
+        radius: 45,
+        blur: 35,
+        maxZoom: 12,
+        max: 10,
+        minOpacity: 0.5,
         gradient: {
           0.0: '#0d9488',
-          0.25: '#14b8a6',
-          0.5: '#2dd4bf',
-          0.75: '#a855f7',
+          0.2: '#14b8a6',
+          0.4: '#2dd4bf',
+          0.6: '#5eead4',
+          0.8: '#a855f7',
           1.0: '#c084fc',
         },
       });
@@ -73,6 +117,7 @@ function HeatmapLayer({ sales, show }: { sales: Sale[]; show: boolean }) {
     return () => {
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
       }
     };
   }, [map, sales, show]);
@@ -81,21 +126,56 @@ function HeatmapLayer({ sales, show }: { sales: Sale[]; show: boolean }) {
 }
 
 export function SalesMap({ sales, showHeatmap }: SalesMapProps) {
-  const center: [number, number] = [40.0, -3.7]; // Center of Spain
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  
+  // Calculate Spain bounds from sales data or use defaults
+  const center: L.LatLngTuple = sales.length > 0
+    ? [
+        sales.reduce((sum, s) => sum + s.lat, 0) / sales.length,
+        sales.reduce((sum, s) => sum + s.lng, 0) / sales.length
+      ]
+    : [40.2, -3.5];
+  
+  // Callback to handle map creation
+  const whenCreated = useCallback((map: L.Map) => {
+    mapRef.current = map;
+    // Delay invalidateSize to ensure container is fully rendered
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  }, []);
   
   return (
-    <div className="map-container h-full w-full">
+    <div 
+      ref={containerRef}
+      style={{ 
+        height: '100%', 
+        width: '100%',
+        position: 'relative'
+      }}
+    >
       <MapContainer
         center={center}
         zoom={6}
-        className="h-full w-full"
+        style={{ 
+          height: '100%', 
+          width: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
+        }}
         zoomControl={true}
+        ref={whenCreated as any}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
+        <MapInitializer sales={sales} />
         <HeatmapLayer sales={sales} show={showHeatmap} />
         
         {!showHeatmap && sales.map((sale) => (
