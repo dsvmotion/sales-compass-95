@@ -4,96 +4,93 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    /* Light mode colors - white/gray palette */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 9%;
 
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 174 72% 46%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 0 0% 15%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 15%;
 
-    --muted: 222 30% 12%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 280 65% 60%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 15%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     --success: 142 72% 46%;
-    --success-foreground: 222 47% 6%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 6%;
+    --warning-foreground: 0 0% 9%;
 
-    --pharmacy: 174 72% 46%;
-    --pharmacy-foreground: 222 47% 6%;
+    /* Monochrome status colors for pharmacies */
+    --pharmacy: 0 0% 27%;
+    --pharmacy-foreground: 0 0% 100%;
 
-    --client: 280 65% 60%;
-    --client-foreground: 210 40% 98%;
+    --client: 0 0% 60%;
+    --client-foreground: 0 0% 9%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 14%;
-    --ring: 174 72% 46%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 15%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --glass: 222 47% 10% / 0.7;
-    --glass-border: 222 30% 20% / 0.5;
+    /* Light mode shadows and effects */
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 46%), hsl(190 80% 50%));
-    --gradient-accent: linear-gradient(135deg, hsl(280 65% 60%), hsl(300 70% 50%));
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 10%), hsl(222 47% 6%));
-    
-    --shadow-glow: 0 0 40px hsl(174 72% 46% / 0.15);
-    --shadow-card: 0 8px 32px hsl(222 47% 2% / 0.5);
-
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 174 72% 46%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 174 72% 46%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 0 0% 15%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 15%;
   }
 
+  /* Dark mode - keeping for future toggle */
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 174 72% 46%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 30% 12%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 280 65% 60%;
-    --accent-foreground: 210 40% 98%;
+    --background: 0 0% 9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 30% 18%;
-    --input: 222 30% 14%;
-    --ring: 174 72% 46%;
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 174 72% 46%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 174 72% 46%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 80%;
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 80%;
   }
 }
 
@@ -109,22 +106,12 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-xl;
+    @apply bg-card border border-border rounded-xl;
     box-shadow: var(--shadow-card);
   }
 
   .stat-card {
-    @apply glass-card p-6 relative overflow-hidden transition-all duration-300 hover:border-primary/30;
-  }
-
-  .stat-card::before {
-    content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent);
-  }
-
-  .stat-card:hover::before {
-    @apply opacity-100;
+    @apply glass-card p-6 relative overflow-hidden transition-all duration-300 hover:border-gray-300;
   }
 
   .filter-chip {
@@ -132,27 +119,23 @@
   }
 
   .filter-chip-pharmacy {
-    @apply bg-pharmacy/10 text-pharmacy border border-pharmacy/20 hover:bg-pharmacy/20;
+    @apply bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200;
   }
 
   .filter-chip-pharmacy.active {
-    @apply bg-pharmacy text-pharmacy-foreground;
+    @apply bg-gray-800 text-white;
   }
 
   .filter-chip-client {
-    @apply bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20;
+    @apply bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100;
   }
 
   .filter-chip-client.active {
-    @apply bg-accent text-accent-foreground;
-  }
-
-  .glow-text {
-    text-shadow: 0 0 30px hsl(var(--primary) / 0.5);
+    @apply bg-gray-500 text-white;
   }
 
   .map-container {
-    @apply rounded-xl overflow-hidden border border-border/50;
+    @apply rounded-xl overflow-hidden border border-border;
     box-shadow: var(--shadow-card);
   }
 }
@@ -177,4 +160,3 @@
     }
   }
 }
-

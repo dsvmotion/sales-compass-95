@@ -69,13 +69,19 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/operations">
-              <Button variant="outline" className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                className="gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
                 <ClipboardList className="h-4 w-4" />
                 Pharmacy Operations
               </Button>
             </Link>
             <Link to="/prospecting">
-              <Button variant="outline" className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                className="gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
                 <MapPin className="h-4 w-4" />
                 Pharmacy Prospecting
               </Button>
@@ -181,12 +187,12 @@ const Index = () => {
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-gray-600" />
-                <span className="text-gray-500">Pharmacy</span>
+                <div className="w-3 h-3 rounded-full bg-gray-800" />
+                <span className="text-gray-600">Pharmacy</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-gray-400" />
-                <span className="text-gray-500">Client</span>
+                <span className="text-gray-600">Client</span>
               </div>
             </div>
           </div>
