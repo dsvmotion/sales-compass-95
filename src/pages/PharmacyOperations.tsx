@@ -1,0 +1,211 @@
+import { useState, useMemo, useCallback } from 'react';
+import { ArrowLeft, RefreshCw, Building2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { usePharmaciesWithOrders } from '@/hooks/usePharmacyOperations';
+import { OperationsFilters, SortField, SortDirection, PharmacyWithOrders } from '@/types/operations';
+import { OperationsTable } from '@/components/operations/OperationsTable';
+import { OperationsFiltersBar } from '@/components/operations/OperationsFiltersBar';
+import { PharmacyOperationsDetail } from '@/components/operations/PharmacyOperationsDetail';
+import { useQueryClient } from '@tanstack/react-query';
+
+const initialFilters: OperationsFilters = {
+  search: '',
+  country: '',
+  province: '',
+  city: '',
+  commercialStatus: 'all',
+  paymentStatus: 'all',
+};
+
+export default function PharmacyOperations() {
+  const [filters, setFilters] = useState<OperationsFilters>(initialFilters);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyWithOrders | null>(null);
+
+  const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders();
+  const queryClient = useQueryClient();
+
+  // Extract unique filter options from data
+  const filterOptions = useMemo(() => {
+    const countries = [...new Set(pharmacies.map(p => p.country).filter(Boolean))] as string[];
+    
+    const provincesSource = filters.country
+      ? pharmacies.filter(p => p.country === filters.country)
+      : pharmacies;
+    const provinces = [...new Set(provincesSource.map(p => p.province).filter(Boolean))] as string[];
+
+    const citiesSource = filters.province
+      ? pharmacies.filter(p => p.province === filters.province)
+      : filters.country
+        ? pharmacies.filter(p => p.country === filters.country)
+        : pharmacies;
+    const cities = [...new Set(citiesSource.map(p => p.city).filter(Boolean))] as string[];
+
+    return {
+      countries: countries.sort((a, b) => a.localeCompare(b)),
+      provinces: provinces.sort((a, b) => a.localeCompare(b)),
+      cities: cities.sort((a, b) => a.localeCompare(b)),
+    };
+  }, [pharmacies, filters.country, filters.province]);
+
+  // Filter and sort pharmacies
+  const displayedPharmacies = useMemo(() => {
+    let result = pharmacies.filter(pharmacy => {
+      // Text search
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch =
+          pharmacy.name.toLowerCase().includes(searchLower) ||
+          pharmacy.address?.toLowerCase().includes(searchLower) ||
+          pharmacy.email?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Geographic filters
+      if (filters.country && pharmacy.country !== filters.country) return false;
+      if (filters.province && pharmacy.province !== filters.province) return false;
+      if (filters.city && pharmacy.city !== filters.city) return false;
+
+      // Commercial status
+      if (filters.commercialStatus !== 'all' && pharmacy.commercialStatus !== filters.commercialStatus) return false;
+
+      // Payment status (based on last order)
+      if (filters.paymentStatus !== 'all') {
+        if (!pharmacy.lastOrder) return false;
+        if (pharmacy.lastOrder.paymentStatus !== filters.paymentStatus) return false;
+      }
+
+      return true;
+    });
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'commercialStatus':
+          comparison = a.commercialStatus.localeCompare(b.commercialStatus);
+          break;
+        case 'totalRevenue':
+          comparison = a.totalRevenue - b.totalRevenue;
+          break;
+        case 'paymentStatus':
+          const statusA = a.lastOrder?.paymentStatus || 'zzz';
+          const statusB = b.lastOrder?.paymentStatus || 'zzz';
+          comparison = statusA.localeCompare(statusB);
+          break;
+        case 'lastOrderDate':
+          const dateA = a.lastOrder?.dateCreated || '1970-01-01';
+          const dateB = b.lastOrder?.dateCreated || '1970-01-01';
+          comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [pharmacies, filters, sortField, sortDirection]);
+
+  const handleFiltersChange = useCallback((newFilters: OperationsFilters) => {
+    // Enforce hierarchy
+    if (newFilters.country !== filters.country) {
+      setFilters({ ...newFilters, province: '', city: '' });
+      return;
+    }
+    if (newFilters.province !== filters.province) {
+      setFilters({ ...newFilters, city: '' });
+      return;
+    }
+    setFilters(newFilters);
+  }, [filters.country, filters.province]);
+
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  }, [sortField]);
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['pharmacies'] });
+    queryClient.invalidateQueries({ queryKey: ['detailed-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['pharmacy-documents'] });
+  }, [queryClient]);
+
+  return (
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* Header */}
+      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-6 bg-gray-50">
+        <div className="flex items-center gap-4">
+          <Link to="/">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <div className="h-6 w-px bg-gray-300" />
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-gray-700" />
+            <h1 className="font-semibold text-lg">Pharmacy Operations</h1>
+          </div>
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+            {displayedPharmacies.length} of {pharmacies.length} pharmacies
+          </span>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="border-gray-300"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </header>
+
+      {/* Filters */}
+      <OperationsFiltersBar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        onClearFilters={() => setFilters(initialFilters)}
+        filterOptions={filterOptions}
+      />
+
+      {/* Main Content */}
+      <div className="flex">
+        {/* Table */}
+        <div className={`flex-1 overflow-auto ${selectedPharmacy ? 'max-w-[calc(100%-400px)]' : ''}`}>
+          <OperationsTable
+            pharmacies={displayedPharmacies}
+            isLoading={isLoading}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            selectedPharmacyId={selectedPharmacy?.id || null}
+            onSelectPharmacy={setSelectedPharmacy}
+          />
+        </div>
+
+        {/* Detail Panel */}
+        {selectedPharmacy && (
+          <div className="w-[400px] border-l border-gray-200 bg-gray-50">
+            <PharmacyOperationsDetail
+              pharmacy={selectedPharmacy}
+              onClose={() => setSelectedPharmacy(null)}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
