@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Pharmacy } from '@/types/pharmacy';
 import type { Json } from '@/integrations/supabase/types';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 export function usePharmacies() {
   return useQuery({
     queryKey: ['pharmacies'],
@@ -164,19 +167,29 @@ export function useSearchGooglePlaces() {
       pageToken?: string;
     }) => {
       console.log('Searching Google Places for pharmacies at:', location);
-      const { data, error } = await supabase.functions.invoke('google-places-pharmacies', {
-        body: {
+      
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/google-places-pharmacies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({
           action: 'search',
           location,
           radius,
           pageToken,
-        },
+        }),
       });
       
-      if (error) {
-        console.error('Google Places search error:', error);
-        throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Google Places search error:', response.status, errorText);
+        throw new Error(`Failed to search: ${response.status}`);
       }
+      
+      const data = await response.json();
       console.log('Found pharmacies:', data?.pharmacies?.length);
       return data;
     },
@@ -186,14 +199,28 @@ export function useSearchGooglePlaces() {
 export function useGetPharmacyDetails() {
   return useMutation({
     mutationFn: async (placeId: string) => {
-      const { data, error } = await supabase.functions.invoke('google-places-pharmacies', {
-        body: {
+      console.log('Fetching pharmacy details for:', placeId);
+      
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/google-places-pharmacies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+        },
+        body: JSON.stringify({
           action: 'details',
           placeId,
-        },
+        }),
       });
       
-      if (error) throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Google Places details error:', response.status, errorText);
+        throw new Error(`Failed to get details: ${response.status}`);
+      }
+      
+      const data = await response.json();
       return data.pharmacy;
     },
   });
