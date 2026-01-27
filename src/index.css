@@ -2,95 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 174 72% 46%;
+    --primary-foreground: 222 47% 6%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 55%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 280 65% 60%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 142 72% 46%;
+    --success-foreground: 222 47% 6%;
 
-    --radius: 0.5rem;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 6%;
 
-    --sidebar-background: 0 0% 98%;
+    --pharmacy: 174 72% 46%;
+    --pharmacy-foreground: 222 47% 6%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --client: 280 65% 60%;
+    --client-foreground: 210 40% 98%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
+    --ring: 174 72% 46%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --radius: 0.75rem;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --glass: 222 47% 10% / 0.7;
+    --glass-border: 222 30% 20% / 0.5;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 46%), hsl(190 80% 50%));
+    --gradient-accent: linear-gradient(135deg, hsl(280 65% 60%), hsl(300 70% 50%));
+    --gradient-card: linear-gradient(145deg, hsl(222 47% 10%), hsl(222 47% 6%));
+    
+    --shadow-glow: 0 0 40px hsl(174 72% 46% / 0.15);
+    --shadow-card: 0 8px 32px hsl(222 47% 2% / 0.5);
 
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 174 72% 46%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 174 72% 46%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 174 72% 46%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 222 30% 14%;
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 280 65% 60%;
     --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
+    --ring: 174 72% 46%;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 174 72% 46%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 174 72% 46%;
   }
 }
 
@@ -100,6 +105,140 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-xl border border-border/50 rounded-xl;
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-card {
+    @apply glass-card p-6 relative overflow-hidden transition-all duration-300 hover:border-primary/30;
+  }
+
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent);
+  }
+
+  .stat-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .filter-chip {
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer;
+  }
+
+  .filter-chip-pharmacy {
+    @apply bg-pharmacy/10 text-pharmacy border border-pharmacy/20 hover:bg-pharmacy/20;
+  }
+
+  .filter-chip-pharmacy.active {
+    @apply bg-pharmacy text-pharmacy-foreground;
+  }
+
+  .filter-chip-client {
+    @apply bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20;
+  }
+
+  .filter-chip-client.active {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 30px hsl(var(--primary) / 0.5);
+  }
+
+  .map-container {
+    @apply rounded-xl overflow-hidden border border-border/50;
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Leaflet custom styles */
+.leaflet-container {
+  background: hsl(222 47% 6%);
+  font-family: inherit;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(0.7) saturate(0.8) hue-rotate(180deg) invert(1);
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.leaflet-control-zoom a {
+  background: hsl(222 47% 10%) !important;
+  color: hsl(210 40% 98%) !important;
+  border: 1px solid hsl(222 30% 18%) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: hsl(222 47% 14%) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(222 47% 10%);
+  color: hsl(210 40% 98%);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+
+.leaflet-popup-tip {
+  background: hsl(222 47% 10%);
+}
+
+.leaflet-popup-close-button {
+  color: hsl(215 20% 55%) !important;
+}
+
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+.marker-pharmacy {
+  width: 24px;
+  height: 24px;
+  background: hsl(174 72% 46%);
+  border-radius: 50%;
+  border: 3px solid hsl(174 72% 60%);
+  box-shadow: 0 0 15px hsl(174 72% 46% / 0.5);
+}
+
+.marker-client {
+  width: 24px;
+  height: 24px;
+  background: hsl(280 65% 60%);
+  border-radius: 50%;
+  border: 3px solid hsl(280 65% 70%);
+  box-shadow: 0 0 15px hsl(280 65% 60% / 0.5);
 }
