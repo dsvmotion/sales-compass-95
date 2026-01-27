@@ -18,6 +18,7 @@ const defaultCenter = {
   lng: -3.7038, // Madrid, Spain
 };
 
+// Light mode map styles
 const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: false,
   zoomControl: true,
@@ -27,30 +28,40 @@ const mapOptions: google.maps.MapOptions = {
   styles: [
     {
       elementType: 'geometry',
-      stylers: [{ color: '#1a1f2e' }],
+      stylers: [{ color: '#f5f5f5' }],
     },
     {
       elementType: 'labels.text.stroke',
-      stylers: [{ color: '#1a1f2e' }],
+      stylers: [{ color: '#ffffff' }],
     },
     {
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#8b9dc3' }],
+      stylers: [{ color: '#616161' }],
     },
     {
       featureType: 'road',
       elementType: 'geometry',
-      stylers: [{ color: '#2d3548' }],
+      stylers: [{ color: '#ffffff' }],
+    },
+    {
+      featureType: 'road',
+      elementType: 'geometry.stroke',
+      stylers: [{ color: '#e0e0e0' }],
     },
     {
       featureType: 'water',
       elementType: 'geometry',
-      stylers: [{ color: '#0e1626' }],
+      stylers: [{ color: '#c9c9c9' }],
     },
     {
       featureType: 'poi',
       elementType: 'labels',
       stylers: [{ visibility: 'off' }],
+    },
+    {
+      featureType: 'administrative',
+      elementType: 'geometry.stroke',
+      stylers: [{ color: '#c9c9c9' }],
     },
   ],
 };

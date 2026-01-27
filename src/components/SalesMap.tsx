@@ -18,6 +18,7 @@ const defaultCenter = {
   lng: -3.7, // Center of Spain
 };
 
+// Light mode map styles
 const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: false,
   zoomControl: true,
@@ -27,30 +28,40 @@ const mapOptions: google.maps.MapOptions = {
   styles: [
     {
       elementType: 'geometry',
-      stylers: [{ color: '#1a1f2e' }],
+      stylers: [{ color: '#f5f5f5' }],
     },
     {
       elementType: 'labels.text.stroke',
-      stylers: [{ color: '#1a1f2e' }],
+      stylers: [{ color: '#ffffff' }],
     },
     {
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#8b9dc3' }],
+      stylers: [{ color: '#616161' }],
     },
     {
       featureType: 'road',
       elementType: 'geometry',
-      stylers: [{ color: '#2d3548' }],
+      stylers: [{ color: '#ffffff' }],
+    },
+    {
+      featureType: 'road',
+      elementType: 'geometry.stroke',
+      stylers: [{ color: '#e0e0e0' }],
     },
     {
       featureType: 'water',
       elementType: 'geometry',
-      stylers: [{ color: '#0e1626' }],
+      stylers: [{ color: '#c9c9c9' }],
     },
     {
       featureType: 'poi',
       elementType: 'labels',
       stylers: [{ visibility: 'off' }],
+    },
+    {
+      featureType: 'administrative',
+      elementType: 'geometry.stroke',
+      stylers: [{ color: '#c9c9c9' }],
     },
   ],
 };
@@ -121,8 +132,9 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
     [onSaleSelect]
   );
 
+  // Monochrome marker colors for light mode
   const getMarkerIcon = useCallback((type: 'pharmacy' | 'client') => {
-    const color = type === 'pharmacy' ? '#14b8a6' : '#a855f7';
+    const color = type === 'pharmacy' ? '#374151' : '#9ca3af'; // gray-700 / gray-400
     return {
       path: google.maps.SymbolPath.CIRCLE,
       fillColor: color,
@@ -181,8 +193,8 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       sale.customerType === 'pharmacy'
-                        ? 'bg-teal-100 text-teal-700'
-                        : 'bg-purple-100 text-purple-700'
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-200 text-gray-700'
                     }`}
                   >
                     {sale.customerType === 'pharmacy' ? 'Pharmacy' : 'Client'}
@@ -194,7 +206,7 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
                 </p>
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-xs text-gray-500">Order {sale.orderId}</span>
-                  <span className="font-bold text-teal-600">
+                  <span className="font-bold text-gray-900">
                     €{sale.amount.toLocaleString()}
                   </span>
                 </div>
