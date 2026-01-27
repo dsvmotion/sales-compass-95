@@ -11,14 +11,30 @@ interface WooCommerceOrderResponse {
   customerType: 'pharmacy' | 'client';
   address: string;
   city: string;
-  lat: number;
-  lng: number;
+  lat?: number | null;
+  lng?: number | null;
   amount: number;
   date: string;
   products: number | string[];
 }
 
+function isValidLatLng(lat: unknown, lng: unknown): lat is number {
+  return (
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 function transformOrderToSale(order: WooCommerceOrderResponse): Sale {
+  if (!isValidLatLng(order.lat, order.lng)) {
+    throw new Error(`Order ${order.orderId} has invalid coordinates`);
+  }
   return {
     id: order.id,
     orderId: order.orderId,
@@ -67,7 +83,19 @@ export function useWooCommerceOrders() {
         
         if (data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
           console.log(`Fetched ${data.orders.length} orders from WooCommerce`);
-          return data.orders.map(transformOrderToSale);
+          const sales: Sale[] = [];
+          let skipped = 0;
+          for (const o of data.orders as WooCommerceOrderResponse[]) {
+            try {
+              sales.push(transformOrderToSale(o));
+            } catch {
+              skipped++;
+            }
+          }
+          if (skipped > 0) {
+            console.warn(`Skipped ${skipped} orders due to missing/invalid geocoding`);
+          }
+          return sales;
         }
         
         console.log('No orders returned from WooCommerce');

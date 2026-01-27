@@ -16,7 +16,10 @@ interface WooCommerceOrder {
     last_name: string;
     company: string;
     address_1: string;
+    address_2?: string;
     city: string;
+    state?: string;
+    postcode?: string;
     country: string;
     email: string;
   };
@@ -45,112 +48,70 @@ interface GeocodedOrder {
   orderId: string;
 }
 
-// City coordinates cache for Spain (faster than geocoding each address)
-const cityCoords: Record<string, { lat: number; lng: number }> = {
-  'madrid': { lat: 40.4168, lng: -3.7038 },
-  'barcelona': { lat: 41.3851, lng: 2.1734 },
-  'valencia': { lat: 39.4699, lng: -0.3763 },
-  'sevilla': { lat: 37.3891, lng: -5.9845 },
-  'seville': { lat: 37.3891, lng: -5.9845 },
-  'zaragoza': { lat: 41.6488, lng: -0.8891 },
-  'málaga': { lat: 36.7213, lng: -4.4214 },
-  'malaga': { lat: 36.7213, lng: -4.4214 },
-  'murcia': { lat: 37.9922, lng: -1.1307 },
-  'bilbao': { lat: 43.2630, lng: -2.9350 },
-  'alicante': { lat: 38.3452, lng: -0.4815 },
-  'córdoba': { lat: 37.8882, lng: -4.7794 },
-  'cordoba': { lat: 37.8882, lng: -4.7794 },
-  'valladolid': { lat: 41.6523, lng: -4.7245 },
-  'vigo': { lat: 42.2406, lng: -8.7207 },
-  'gijón': { lat: 43.5322, lng: -5.6611 },
-  'gijon': { lat: 43.5322, lng: -5.6611 },
-  'a coruña': { lat: 43.3623, lng: -8.4115 },
-  'la coruña': { lat: 43.3623, lng: -8.4115 },
-  'granada': { lat: 37.1773, lng: -3.5986 },
-  'vitoria': { lat: 42.8467, lng: -2.6716 },
-  'santander': { lat: 43.4623, lng: -3.8099 },
-  'oviedo': { lat: 43.3614, lng: -5.8493 },
-  'pamplona': { lat: 42.8125, lng: -1.6458 },
-  'san sebastián': { lat: 43.3183, lng: -1.9812 },
-  'san sebastian': { lat: 43.3183, lng: -1.9812 },
-  'donostia': { lat: 43.3183, lng: -1.9812 },
-  'palma': { lat: 39.5696, lng: 2.6502 },
-  'las palmas': { lat: 28.1235, lng: -15.4363 },
-  'santa cruz de tenerife': { lat: 28.4636, lng: -16.2518 },
-  'burgos': { lat: 42.3439, lng: -3.6969 },
-  'salamanca': { lat: 40.9688, lng: -5.6631 },
-  'león': { lat: 42.5987, lng: -5.5671 },
-  'leon': { lat: 42.5987, lng: -5.5671 },
-  'tarragona': { lat: 41.1189, lng: 1.2445 },
-  'lleida': { lat: 41.6176, lng: 0.6200 },
-  'girona': { lat: 41.9794, lng: 2.8214 },
-  'cádiz': { lat: 36.5271, lng: -6.2886 },
-  'cadiz': { lat: 36.5271, lng: -6.2886 },
-  'huelva': { lat: 37.2614, lng: -6.9447 },
-  'jaén': { lat: 37.7796, lng: -3.7849 },
-  'jaen': { lat: 37.7796, lng: -3.7849 },
-  'almería': { lat: 36.8340, lng: -2.4637 },
-  'almeria': { lat: 36.8340, lng: -2.4637 },
-  'toledo': { lat: 39.8628, lng: -4.0273 },
-  'albacete': { lat: 38.9942, lng: -1.8585 },
-  'badajoz': { lat: 38.8794, lng: -6.9707 },
-  'logroño': { lat: 42.4627, lng: -2.4449 },
-  'logrono': { lat: 42.4627, lng: -2.4449 },
-  'castellón': { lat: 39.9864, lng: -0.0513 },
-  'castellon': { lat: 39.9864, lng: -0.0513 },
-  'pontevedra': { lat: 42.4310, lng: -8.6446 },
-  'lugo': { lat: 43.0097, lng: -7.5567 },
-  'ourense': { lat: 42.3364, lng: -7.8639 },
-  'huesca': { lat: 42.1401, lng: -0.4089 },
-  'teruel': { lat: 40.3456, lng: -1.1065 },
-  'cuenca': { lat: 40.0704, lng: -2.1374 },
-  'guadalajara': { lat: 40.6337, lng: -3.1674 },
-  'segovia': { lat: 40.9429, lng: -4.1088 },
-  'ávila': { lat: 40.6566, lng: -4.6818 },
-  'avila': { lat: 40.6566, lng: -4.6818 },
-  'soria': { lat: 41.7636, lng: -2.4649 },
-  'zamora': { lat: 41.5034, lng: -5.7467 },
-  'palencia': { lat: 42.0096, lng: -4.5288 },
-  'cáceres': { lat: 39.4753, lng: -6.3724 },
-  'caceres': { lat: 39.4753, lng: -6.3724 },
-  'mérida': { lat: 38.9160, lng: -6.3435 },
-  'merida': { lat: 38.9160, lng: -6.3435 },
-  'ciudad real': { lat: 38.9848, lng: -3.9274 },
-  'rubí': { lat: 41.4943, lng: 2.0329 },
-  'rubi': { lat: 41.4943, lng: 2.0329 },
-  'majadahonda': { lat: 40.4728, lng: -3.8722 },
-  'pinto': { lat: 40.2426, lng: -3.6988 },
-  "la seu d'urgell": { lat: 42.3578, lng: 1.4561 },
-  'a pastoriza': { lat: 43.2833, lng: -7.5667 },
-  'san antonio de benageber': { lat: 39.5667, lng: -0.4833 },
+type GeocodeResult = {
+  location: { lat: number; lng: number };
+  location_type?: string;
 };
 
-// Get coordinates for a city (with slight random offset for visual spread)
-function getCityCoords(city: string): { lat: number; lng: number } | null {
-  const normalizedCity = city.toLowerCase().trim();
-  const coords = cityCoords[normalizedCity];
-  
-  if (coords) {
-    // Add small random offset so markers don't stack exactly
-    const offset = () => (Math.random() - 0.5) * 0.02;
-    return {
-      lat: coords.lat + offset(),
-      lng: coords.lng + offset()
-    };
+const geocodeCache = new Map<string, GeocodeResult | null>();
+
+function normalizeAddressForCache(addr: string): string {
+  return addr.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function isValidLatLng(lat: unknown, lng: unknown): lat is number {
+  return (
+    typeof lat === 'number' &&
+    Number.isFinite(lat) &&
+    typeof lng === 'number' &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+async function geocodeFullAddress(address: string): Promise<GeocodeResult | null> {
+  const key = normalizeAddressForCache(address);
+  if (geocodeCache.has(key)) return geocodeCache.get(key) ?? null;
+
+  const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+  if (!apiKey) {
+    geocodeCache.set(key, null);
+    return null;
   }
-  
-  // Try partial match
-  for (const [key, value] of Object.entries(cityCoords)) {
-    if (normalizedCity.includes(key) || key.includes(normalizedCity)) {
-      const offset = () => (Math.random() - 0.5) * 0.02;
-      return {
-        lat: value.lat + offset(),
-        lng: value.lng + offset()
-      };
-    }
+
+  const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+  url.searchParams.set('address', address);
+  url.searchParams.set('key', apiKey);
+
+  const resp = await fetch(url.toString());
+  if (!resp.ok) {
+    geocodeCache.set(key, null);
+    return null;
   }
-  
-  return null;
+
+  const json = await resp.json();
+  const first = json?.results?.[0];
+  const loc = first?.geometry?.location;
+  const locationType = first?.geometry?.location_type;
+
+  if (!isValidLatLng(loc?.lat, loc?.lng)) {
+    geocodeCache.set(key, null);
+    return null;
+  }
+
+  // Strict reliability gate: accept only precise-ish results.
+  const allowed = new Set(['ROOFTOP', 'RANGE_INTERPOLATED']);
+  if (locationType && !allowed.has(String(locationType))) {
+    geocodeCache.set(key, null);
+    return null;
+  }
+
+  const result: GeocodeResult = { location: { lat: loc.lat, lng: loc.lng }, location_type: locationType };
+  geocodeCache.set(key, result);
+  return result;
 }
 
 // Detect if customer is a pharmacy based on company name or metadata
@@ -224,17 +185,25 @@ serve(async (req) => {
     
     // Transform and geocode orders
     const geocodedOrders: GeocodedOrder[] = [];
+    let skippedNoGeocode = 0;
     
     for (const order of orders) {
       const customerName = order.billing.company || 
         `${order.billing.first_name} ${order.billing.last_name}`.trim();
-      
-      // Get coordinates from city cache (fast, no API call)
-      const coords = getCityCoords(order.billing.city);
-      
-      // Skip orders without valid coordinates
-      if (!coords) {
-        console.log(`Unknown city for order ${order.number}: ${order.billing.city}`);
+
+      const addressParts = [
+        order.billing.address_1,
+        order.billing.address_2,
+        order.billing.postcode,
+        order.billing.city,
+        order.billing.state,
+        order.billing.country,
+      ].filter((x) => typeof x === 'string' && x.trim().length > 0) as string[];
+      const fullAddress = addressParts.join(', ');
+
+      const geo = await geocodeFullAddress(fullAddress);
+      if (!geo) {
+        skippedNoGeocode++;
         continue;
       }
       
@@ -244,8 +213,8 @@ serve(async (req) => {
         customerType: isPharmacy(order) ? 'pharmacy' : 'client',
         address: order.billing.address_1,
         city: order.billing.city,
-        lat: coords.lat,
-        lng: coords.lng,
+        lat: geo.location.lat,
+        lng: geo.location.lng,
         amount: parseFloat(order.total),
         date: order.date_created.split('T')[0],
         products: order.line_items.reduce((sum, item) => sum + item.quantity, 0),
@@ -260,6 +229,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         orders: geocodedOrders,
+        skipped: {
+          no_geocode: skippedNoGeocode,
+        },
         pagination: {
           total: parseInt(totalOrders),
           totalPages: parseInt(totalPages),

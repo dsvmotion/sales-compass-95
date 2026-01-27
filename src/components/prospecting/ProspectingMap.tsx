@@ -55,11 +55,12 @@ export function ProspectingMap({
     (pharmacy: Pharmacy, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
       // Prefer custom icon when provided
       if (markerIconUrl) {
-        const size = isSelected ? 44 : 36;
+        const width = isSelected ? 44 : 36;
+        const height = isSelected ? 54 : 44;
         return {
           url: markerIconUrl,
-          scaledSize: new google.maps.Size(size, size),
-          anchor: new google.maps.Point(size / 2, size),
+          scaledSize: new google.maps.Size(width, height),
+          anchor: new google.maps.Point(width / 2, height),
         };
       }
 
@@ -135,7 +136,12 @@ export function ProspectingMap({
         const bounds = map.getBounds();
         const center = map.getCenter();
         if (bounds && center && debouncedBoundsChanged.current) {
-          debouncedBoundsChanged.current(bounds, center);
+          // Never allow async exceptions to crash the map loop
+          try {
+            debouncedBoundsChanged.current(bounds, center);
+          } catch (e) {
+            console.error('onBoundsChanged error:', e);
+          }
         }
       });
     }

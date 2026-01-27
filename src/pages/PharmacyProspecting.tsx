@@ -358,7 +358,12 @@ export default function PharmacyProspecting() {
 
     // bounds is the source of truth; center is unused but kept for signature compatibility
     void center;
-    await searchPharmaciesInBounds(bounds, false);
+    // Never let an async error bubble into the map event loop
+    try {
+      await searchPharmaciesInBounds(bounds, false);
+    } catch (e) {
+      console.error('AutoSearch failed:', e);
+    }
   }, [autoSearchEnabled, boundsToKey, searchPharmaciesInBounds]);
 
   return (
