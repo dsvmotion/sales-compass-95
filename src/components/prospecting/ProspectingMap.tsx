@@ -13,11 +13,11 @@ interface ProspectingMapProps {
   hasActiveGeoFilter: boolean;
 }
 
-// Monochrome status colors for light mode
-const LIGHT_STATUS_COLORS = {
-  not_contacted: '#9ca3af', // gray-400
-  contacted: '#6b7280', // gray-500
-  client: '#374151', // gray-700
+// Status colors matching new design: Yellow/Blue/Green
+const STATUS_PIN_COLORS = {
+  not_contacted: '#eab308', // Yellow
+  contacted: '#3b82f6', // Blue
+  client: '#22c55e', // Green
 };
 
 export function ProspectingMap({
@@ -34,10 +34,10 @@ export function ProspectingMap({
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // Get marker icon using default Google marker with status color (monochrome)
+  // Get marker icon using status colors (Yellow/Blue/Green)
   const getMarkerIcon = useCallback(
     (pharmacy: Pharmacy, isSelected: boolean): google.maps.Symbol => {
-      const color = LIGHT_STATUS_COLORS[pharmacy.commercial_status];
+      const color = STATUS_PIN_COLORS[pharmacy.commercial_status];
       return {
         path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
         fillColor: color,
@@ -285,15 +285,15 @@ export function ProspectingMap({
             </p>
             <div className="mt-6 flex items-center justify-center gap-4 text-xs text-gray-500">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-gray-400" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500" />
                 <span>Not contacted</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-gray-500" />
+                <span className="w-3 h-3 rounded-full bg-blue-500" />
                 <span>Contacted</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-gray-700" />
+                <span className="w-3 h-3 rounded-full bg-green-500" />
                 <span>Client</span>
               </div>
             </div>

@@ -36,9 +36,16 @@ export const STATUS_LABELS: Record<PharmacyStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<PharmacyStatus, { bg: string; text: string; pin: string }> = {
-  not_contacted: { bg: 'bg-gray-500/20', text: 'text-gray-400', pin: '#6b7280' },
-  contacted: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', pin: '#eab308' },
-  client: { bg: 'bg-green-500/20', text: 'text-green-400', pin: '#22c55e' },
+  not_contacted: { bg: 'bg-yellow-100', text: 'text-yellow-800', pin: '#eab308' }, // Yellow
+  contacted: { bg: 'bg-blue-100', text: 'text-blue-800', pin: '#3b82f6' }, // Blue
+  client: { bg: 'bg-green-100', text: 'text-green-800', pin: '#22c55e' }, // Green
+};
+
+// WooCommerce-only customer color (not matched to pharmacy)
+export const WOOCOMMERCE_CUSTOMER_COLOR = {
+  bg: 'bg-violet-100',
+  text: 'text-violet-800',
+  pin: '#8b5cf6', // Violet
 };
 
 export const EUROPEAN_COUNTRIES = [

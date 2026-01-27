@@ -187,11 +187,11 @@ const Index = () => {
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-gray-800" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
                 <span className="text-gray-600">Pharmacy</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-gray-400" />
+                <div className="w-3 h-3 rounded-full bg-violet-500" />
                 <span className="text-gray-600">Client</span>
               </div>
             </div>
@@ -281,8 +281,8 @@ const Index = () => {
                               className="w-3 h-3 rounded-full flex-shrink-0"
                               style={{ 
                                 backgroundColor: sale.customerType === 'pharmacy' 
-                                  ? '#4b5563' 
-                                  : '#9ca3af'
+                                  ? '#22c55e' // green-500
+                                  : '#8b5cf6' // violet-500
                               }}
                             />
                           </div>
