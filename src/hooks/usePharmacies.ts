@@ -163,6 +163,7 @@ export function useSearchGooglePlaces() {
       radius?: number;
       pageToken?: string;
     }) => {
+      console.log('Searching Google Places for pharmacies at:', location);
       const { data, error } = await supabase.functions.invoke('google-places-pharmacies', {
         body: {
           action: 'search',
@@ -172,7 +173,11 @@ export function useSearchGooglePlaces() {
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Google Places search error:', error);
+        throw error;
+      }
+      console.log('Found pharmacies:', data?.pharmacies?.length);
       return data;
     },
   });
