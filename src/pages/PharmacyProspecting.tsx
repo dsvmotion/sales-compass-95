@@ -19,7 +19,8 @@ export default function PharmacyProspecting() {
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [autoSearchEnabled, setAutoSearchEnabled] = useState(true);
+  // STOP-SHIP safeguard: default AutoSearch to OFF until stable (user can toggle ON)
+  const [autoSearchEnabled, setAutoSearchEnabled] = useState(false);
   const lastBoundsKey = useRef<string | null>(null);
   const activeSearchSeq = useRef(0);
   const activeAbort = useRef<AbortController | null>(null);
@@ -345,16 +346,17 @@ export default function PharmacyProspecting() {
   ) => {
     if (!autoSearchEnabled) return;
 
+    const key = boundsToKey(bounds);
+    if (lastBoundsKey.current === key) return;
+    lastBoundsKey.current = key;
+
+    // Only update view state when bounds actually change (prevents rerender storms)
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
     setViewBounds({
       ne: { lat: ne.lat(), lng: ne.lng() },
       sw: { lat: sw.lat(), lng: sw.lng() },
     });
-
-    const key = boundsToKey(bounds);
-    if (lastBoundsKey.current === key) return;
-    lastBoundsKey.current = key;
 
     // bounds is the source of truth; center is unused but kept for signature compatibility
     void center;
