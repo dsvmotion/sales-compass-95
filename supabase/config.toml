@@ -1,1 +1,7 @@
 project_id = "dutwoilqrmpgzxdbtxpn"
+
+[functions.woocommerce-orders]
+verify_jwt = false
+
+[functions.google-places-pharmacies]
+verify_jwt = false
