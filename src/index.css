@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "leaflet/dist/leaflet.css";
-
 @layer base {
   :root {
     --background: 222 47% 6%;
@@ -180,70 +178,3 @@
   }
 }
 
-/* Leaflet custom styles */
-.leaflet-container {
-  background: hsl(222 47% 6%);
-  font-family: inherit;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-}
-
-.leaflet-tile-pane {
-  filter: brightness(0.7) saturate(0.8) hue-rotate(180deg) invert(1);
-}
-
-.leaflet-control-zoom {
-  border: none !important;
-  box-shadow: var(--shadow-card) !important;
-}
-
-.leaflet-control-zoom a {
-  background: hsl(222 47% 10%) !important;
-  color: hsl(210 40% 98%) !important;
-  border: 1px solid hsl(222 30% 18%) !important;
-}
-
-.leaflet-control-zoom a:hover {
-  background: hsl(222 47% 14%) !important;
-}
-
-.leaflet-popup-content-wrapper {
-  background: hsl(222 47% 10%);
-  color: hsl(210 40% 98%);
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-card);
-}
-
-.leaflet-popup-tip {
-  background: hsl(222 47% 10%);
-}
-
-.leaflet-popup-close-button {
-  color: hsl(215 20% 55%) !important;
-}
-
-.custom-marker {
-  background: transparent;
-  border: none;
-}
-
-.marker-pharmacy {
-  width: 24px;
-  height: 24px;
-  background: hsl(174 72% 46%);
-  border-radius: 50%;
-  border: 3px solid hsl(174 72% 60%);
-  box-shadow: 0 0 15px hsl(174 72% 46% / 0.5);
-}
-
-.marker-client {
-  width: 24px;
-  height: 24px;
-  background: hsl(280 65% 60%);
-  border-radius: 50%;
-  border: 3px solid hsl(280 65% 70%);
-  box-shadow: 0 0 15px hsl(280 65% 60% / 0.5);
-}
