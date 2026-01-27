@@ -46,7 +46,7 @@ serve(async (req) => {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
-    const { action, location, radius = 50000, pageToken, placeId } = await req.json();
+    const { action, location, radius = 50000, pageToken, placeId, query } = await req.json();
 
     if (action === 'search') {
       // Search for pharmacies near a location
@@ -132,9 +132,6 @@ serve(async (req) => {
 
     if (action === 'textSearch') {
       // Text search for pharmacies in a specific area
-      // Query is passed in the initial JSON payload, not re-parsed
-      const query = (await req.clone().json()).query;
-      
       if (!query && !pageToken) {
         throw new Error('query is required for textSearch action');
       }
