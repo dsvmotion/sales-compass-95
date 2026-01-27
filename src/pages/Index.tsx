@@ -114,7 +114,7 @@ const Index = () => {
                   {filteredSales.length} locations
                 </span>
               </div>
-              <div className="h-[500px] rounded-lg overflow-hidden">
+              <div style={{ height: '500px', position: 'relative' }} className="rounded-lg overflow-hidden">
                 <SalesMap sales={filteredSales} showHeatmap={showHeatmap} />
               </div>
             </div>
