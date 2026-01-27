@@ -21,8 +21,8 @@ export default function PharmacyProspecting() {
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  // Geography options from database (hierarchical)
-  const { countries, provinces, cities, isLoading: isLoadingOptions } = useGeographyOptions(
+  // Geography options - countries only (province/city use Google Autocomplete now)
+  const { countries, isLoading: isLoadingOptions } = useGeographyOptions(
     filters.country,
     filters.province
   );
@@ -147,8 +147,6 @@ export default function PharmacyProspecting() {
             onClearFilters={handleClearFilters}
             hasSearched={hasSearched}
             countries={countries}
-            provinces={provinces}
-            cities={cities}
             isLoadingOptions={isLoadingOptions}
             onSearch={handleSearch}
             isSearching={isSearching}
