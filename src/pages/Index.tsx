@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ShoppingCart, TrendingUp, Users, MapPin, RefreshCw, AlertCircle, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Header } from '@/components/Header';
 import { SalesMap } from '@/components/SalesMap';
-import { StatCard } from '@/components/StatCard';
 import { useWooCommerceOrders } from '@/hooks/useWooCommerceOrders';
 import { Sale } from '@/types/sale';
 import { Button } from '@/components/ui/button';
@@ -13,7 +11,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const Index = () => {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   
-  // Filter state
   const [filters, setFilters] = useState({
     city: '',
     customerType: 'all' as 'pharmacy' | 'client' | 'all',
@@ -21,7 +18,6 @@ const Index = () => {
 
   const { data: sales = [], isLoading, error, refetch } = useWooCommerceOrders();
 
-  // Get unique cities for filter dropdown
   const uniqueCities = useMemo(() => {
     const cities = sales
       .map(s => s.city)
@@ -29,7 +25,6 @@ const Index = () => {
     return [...new Set(cities)].sort();
   }, [sales]);
 
-  // Filter sales
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
       if (filters.city && sale.city !== filters.city) return false;
@@ -38,7 +33,6 @@ const Index = () => {
     });
   }, [sales, filters]);
 
-  // Calculate stats
   const stats = useMemo(() => {
     const totalRevenue = filteredSales.reduce((sum, s) => sum + s.amount, 0);
     const pharmacySales = filteredSales.filter(s => s.customerType === 'pharmacy');
@@ -58,7 +52,6 @@ const Index = () => {
     };
   }, [filteredSales]);
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({ city: '', customerType: 'all' });
   };
@@ -66,19 +59,23 @@ const Index = () => {
   const hasActiveFilters = filters.city || filters.customerType !== 'all';
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6">
       <div className="max-w-[1600px] mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Header />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Sales Tracker</h1>
+            <p className="text-sm text-gray-500">Global overview of sales and revenue</p>
+          </div>
           <div className="flex items-center gap-2">
             <Link to="/operations">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
                 <ClipboardList className="h-4 w-4" />
                 Pharmacy Operations
               </Button>
             </Link>
             <Link to="/prospecting">
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
                 <MapPin className="h-4 w-4" />
                 Pharmacy Prospecting
               </Button>
@@ -88,39 +85,57 @@ const Index = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="Total Orders"
-            value={stats.totalOrders}
-            subtitle={`${sales.length} total in system`}
-            icon={ShoppingCart}
-          />
-          <StatCard
-            title="Total Revenue"
-            value={`€${stats.totalRevenue.toLocaleString()}`}
-            subtitle="All sales combined"
-            icon={TrendingUp}
-            variant="pharmacy"
-          />
-          <StatCard
-            title="Pharmacy Sales"
-            value={stats.pharmacyCount}
-            subtitle={`€${stats.pharmacyRevenue.toLocaleString()} revenue`}
-            icon={MapPin}
-          />
-          <StatCard
-            title="Client Sales"
-            value={stats.clientCount}
-            subtitle={`€${stats.clientRevenue.toLocaleString()} revenue`}
-            icon={Users}
-            variant="client"
-          />
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gray-200">
+                <ShoppingCart className="h-5 w-5 text-gray-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                <p className="text-sm text-gray-500">Total Orders</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gray-200">
+                <TrendingUp className="h-5 w-5 text-gray-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">€{stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Total Revenue</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gray-200">
+                <MapPin className="h-5 w-5 text-gray-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.pharmacyCount}</p>
+                <p className="text-sm text-gray-500">Pharmacy Sales (€{stats.pharmacyRevenue.toLocaleString()})</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gray-200">
+                <Users className="h-5 w-5 text-gray-700" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.clientCount}</p>
+                <p className="text-sm text-gray-500">Client Sales (€{stats.clientRevenue.toLocaleString()})</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filter Bar */}
-        <div className="glass-card p-4 mb-6">
+        <div className="p-4 mb-6 rounded-lg border border-gray-200 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+              <span className="text-sm font-medium text-gray-500">Filters:</span>
               
               <Select
                 value={filters.city || 'all-cities'}
@@ -129,10 +144,10 @@ const Index = () => {
                   city: value === 'all-cities' ? '' : value 
                 }))}
               >
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="all-cities">All Cities</SelectItem>
                   {uniqueCities.map(city => (
                     <SelectItem key={city} value={city}>{city}</SelectItem>
@@ -147,10 +162,10 @@ const Index = () => {
                   customerType: value as 'pharmacy' | 'client' | 'all'
                 }))}
               >
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="pharmacy">Pharmacies</SelectItem>
                   <SelectItem value="client">Clients</SelectItem>
@@ -158,7 +173,7 @@ const Index = () => {
               </Select>
               
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500">
                   Clear Filters
                 </Button>
               )}
@@ -166,12 +181,12 @@ const Index = () => {
             
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-teal-500" />
-                <span className="text-muted-foreground">Pharmacy</span>
+                <div className="w-3 h-3 rounded-full bg-gray-600" />
+                <span className="text-gray-500">Pharmacy</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-purple-500" />
-                <span className="text-muted-foreground">Client</span>
+                <div className="w-3 h-3 rounded-full bg-gray-400" />
+                <span className="text-gray-500">Client</span>
               </div>
             </div>
           </div>
@@ -181,27 +196,27 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Map Section */}
           <div className="lg:col-span-2">
-            <div className="glass-card p-4">
+            <div className="p-4 rounded-lg border border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">Sales Locations</h2>
-                <span className="text-xs text-muted-foreground">
+                <h2 className="font-semibold text-gray-900">Sales Locations</h2>
+                <span className="text-xs text-gray-500">
                   {filteredSales.length} orders
                 </span>
               </div>
-              <div style={{ height: '500px' }} className="rounded-lg overflow-hidden">
+              <div style={{ height: '500px' }} className="rounded-lg overflow-hidden border border-gray-200">
                 {isLoading ? (
-                  <div className="h-full flex items-center justify-center bg-card/50">
+                  <div className="h-full flex items-center justify-center bg-gray-50">
                     <div className="text-center">
-                      <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary" />
-                      <p className="text-muted-foreground mt-2">Loading sales data...</p>
+                      <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                      <p className="text-gray-500 mt-2">Loading sales data...</p>
                     </div>
                   </div>
                 ) : error ? (
-                  <div className="h-full flex items-center justify-center bg-card/50">
-                    <div className="text-center text-destructive">
+                  <div className="h-full flex items-center justify-center bg-gray-50">
+                    <div className="text-center text-gray-600">
                       <AlertCircle className="h-8 w-8 mx-auto" />
                       <p className="mt-2">Failed to load sales</p>
-                      <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+                      <Button variant="outline" size="sm" className="mt-2 border-gray-300" onClick={() => refetch()}>
                         Retry
                       </Button>
                     </div>
@@ -219,17 +234,17 @@ const Index = () => {
 
           {/* Sales List Section */}
           <div className="lg:col-span-1">
-            <div className="glass-card p-4">
+            <div className="p-4 rounded-lg border border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">Recent Sales</h2>
-                <span className="text-xs text-muted-foreground px-2 py-1 rounded-full bg-secondary">
+                <h2 className="font-semibold text-gray-900">Recent Sales</h2>
+                <span className="text-xs text-gray-500 px-2 py-1 rounded-full bg-gray-100">
                   €{stats.avgOrderValue.toFixed(0)} avg
                 </span>
               </div>
               <ScrollArea className="h-[500px]">
                 <div className="space-y-2 pr-4">
                   {filteredSales.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-8 text-gray-500">
                       {sales.length === 0 
                         ? 'No sales data available.'
                         : 'No sales match the current filters.'}
@@ -238,42 +253,42 @@ const Index = () => {
                     filteredSales.map((sale) => (
                       <div
                         key={sale.id}
-                        className={`p-3 rounded-lg border transition-all cursor-pointer hover:border-primary/50 ${
+                        className={`p-3 rounded-lg border transition-all cursor-pointer ${
                           selectedSale?.id === sale.id 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-border bg-card/50'
+                            ? 'border-gray-400 bg-gray-100' 
+                            : 'border-gray-200 bg-white hover:bg-gray-50'
                         }`}
                         onClick={() => setSelectedSale(sale)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm truncate">{sale.customerName}</h3>
-                            <p className="text-xs text-muted-foreground truncate">
+                            <h3 className="font-medium text-sm text-gray-900 truncate">{sale.customerName}</h3>
+                            <p className="text-xs text-gray-500 truncate">
                               {sale.city} • {sale.orderId}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-primary">
+                            <span className="text-sm font-semibold text-gray-900">
                               €{sale.amount.toLocaleString()}
                             </span>
                             <div 
                               className="w-3 h-3 rounded-full flex-shrink-0"
                               style={{ 
                                 backgroundColor: sale.customerType === 'pharmacy' 
-                                  ? '#14b8a6' 
-                                  : '#a855f7'
+                                  ? '#4b5563' 
+                                  : '#9ca3af'
                               }}
                             />
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {sale.products.slice(0, 2).map((product, i) => (
-                            <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+                            <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
                               {product}
                             </span>
                           ))}
                           {sale.products.length > 2 && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-gray-500">
                               +{sale.products.length - 2} more
                             </span>
                           )}
@@ -288,22 +303,22 @@ const Index = () => {
         </div>
 
         {/* Status Bar */}
-        <div className="mt-6 glass-card p-4">
+        <div className="mt-6 p-4 rounded-lg border border-gray-200 bg-white">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {isLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-gray-500">
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   <span className="text-sm">Loading sales...</span>
                 </div>
               ) : error ? (
-                <div className="flex items-center gap-2 text-destructive">
+                <div className="flex items-center gap-2 text-gray-600">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Failed to load data</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-primary">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="w-2 h-2 rounded-full bg-gray-400" />
                   <span className="text-sm">
                     {sales.length} orders loaded • Showing {filteredSales.length}
                   </span>
@@ -315,6 +330,7 @@ const Index = () => {
               size="sm"
               onClick={() => refetch()}
               disabled={isLoading}
+              className="border-gray-300"
             >
               <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh

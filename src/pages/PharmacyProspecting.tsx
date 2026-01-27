@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Building2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building2, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PharmacySidebar } from '@/components/prospecting/PharmacySidebar';
@@ -83,20 +83,23 @@ export default function PharmacyProspecting() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-white text-gray-900">
       {/* Header */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm shrink-0">
+      <header className="h-14 border-b border-gray-200 flex items-center justify-between px-4 bg-gray-50 shrink-0">
         <div className="flex items-center gap-4">
           <Link to="/">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
           </Link>
-          <div className="h-6 w-px bg-border" />
-          <h1 className="font-semibold text-lg">Pharmacy Prospecting Map</h1>
+          <div className="h-6 w-px bg-gray-300" />
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-gray-600" />
+            <h1 className="font-semibold text-lg text-gray-900">Pharmacy Prospecting Map</h1>
+          </div>
           {hasActiveGeoFilter && (
-            <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
               {displayedPharmacies.length} pharmacies
             </span>
           )}
@@ -108,6 +111,7 @@ export default function PharmacyProspecting() {
             size="sm"
             onClick={() => refetch()}
             disabled={isLoading}
+            className="border-gray-300"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -118,7 +122,7 @@ export default function PharmacyProspecting() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 shrink-0">
+        <div className="w-80 shrink-0 border-r border-gray-200 bg-gray-50">
           <PharmacySidebar
             pharmacies={pharmacies}
             displayedPharmacies={displayedPharmacies}
@@ -144,7 +148,7 @@ export default function PharmacyProspecting() {
 
         {/* Detail Panel */}
         {selectedPharmacy && (
-          <div className="w-96 shrink-0">
+          <div className="w-96 shrink-0 border-l border-gray-200 bg-gray-50">
             <PharmacyDetailPanel
               pharmacy={selectedPharmacy}
               onClose={handleCloseDetail}
