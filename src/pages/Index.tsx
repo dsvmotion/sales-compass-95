@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, TrendingUp, Users, MapPin, RefreshCw, AlertCircle } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, MapPin, RefreshCw, AlertCircle, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { SalesMap } from '@/components/SalesMap';
@@ -70,12 +70,20 @@ const Index = () => {
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Header />
-          <Link to="/prospecting">
-            <Button variant="outline" className="gap-2">
-              <MapPin className="h-4 w-4" />
-              Pharmacy Prospecting
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/operations">
+              <Button variant="outline" className="gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Pharmacy Operations
+              </Button>
+            </Link>
+            <Link to="/prospecting">
+              <Button variant="outline" className="gap-2">
+                <MapPin className="h-4 w-4" />
+                Pharmacy Prospecting
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
