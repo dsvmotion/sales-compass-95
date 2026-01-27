@@ -5,6 +5,38 @@ import { Pharmacy, PharmacyFilters as Filters } from '@/types/pharmacy';
 import { PharmacyFilters } from './PharmacyFilters';
 import { PharmacyListItem } from './PharmacyListItem';
 
+function norm(value: string | null | undefined): string {
+  return (value ?? '').trim().replace(/\s+/g, ' ');
+}
+
+function extractGeoFromGoogleData(googleData: unknown): { city?: string; province?: string; country?: string } {
+  try {
+    const comps = (googleData as any)?.address_components;
+    if (!Array.isArray(comps)) return {};
+
+    const byType = (type: string) => comps.find((c: any) => Array.isArray(c?.types) && c.types.includes(type));
+
+    const country = byType('country')?.long_name;
+    // City preference order
+    const city =
+      byType('locality')?.long_name ||
+      byType('postal_town')?.long_name ||
+      byType('administrative_area_level_3')?.long_name ||
+      byType('sublocality')?.long_name;
+
+    // Province/region preference order (Spain often level_2 = province)
+    const province = byType('administrative_area_level_2')?.long_name || byType('administrative_area_level_1')?.long_name;
+
+    return {
+      city: typeof city === 'string' ? city : undefined,
+      province: typeof province === 'string' ? province : undefined,
+      country: typeof country === 'string' ? country : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 interface PharmacySidebarProps {
   pharmacies: Pharmacy[];
   isLoading: boolean;
@@ -28,11 +60,32 @@ export function PharmacySidebar({
 }: PharmacySidebarProps) {
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const { filteredPharmacies, cities, provinces, stats } = useMemo(() => {
-    const uniqueCities = [...new Set(pharmacies.map(p => p.city).filter(Boolean))] as string[];
-    const uniqueProvinces = [...new Set(pharmacies.map(p => p.province).filter(Boolean))] as string[];
+  const { filteredPharmacies, countries, cities, provinces, stats } = useMemo(() => {
+    const normalized = pharmacies.map((p) => {
+      const fallback = extractGeoFromGoogleData(p.google_data);
+      return {
+        ...p,
+        city: norm(p.city || fallback.city || null),
+        province: norm(p.province || fallback.province || null),
+        country: norm(p.country || fallback.country || null),
+      };
+    });
 
-    const filtered = pharmacies.filter((pharmacy) => {
+    const uniqueCountries = [...new Set(normalized.map((p) => p.country).filter(Boolean))] as string[];
+
+    const provincesSource = filters.country
+      ? normalized.filter((p) => p.country === filters.country)
+      : normalized;
+    const uniqueProvinces = [...new Set(provincesSource.map((p) => p.province).filter(Boolean))] as string[];
+
+    const citiesSource = filters.province
+      ? normalized.filter((p) => p.province === filters.province && (!filters.country || p.country === filters.country))
+      : filters.country
+        ? normalized.filter((p) => p.country === filters.country)
+        : normalized;
+    const uniqueCities = [...new Set(citiesSource.map((p) => p.city).filter(Boolean))] as string[];
+
+    const filtered = normalized.filter((pharmacy) => {
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         const matchesSearch = 
@@ -55,8 +108,9 @@ export function PharmacySidebar({
 
     return {
       filteredPharmacies: filtered,
-      cities: uniqueCities.sort(),
-      provinces: uniqueProvinces.sort(),
+      countries: uniqueCountries.sort((a, b) => a.localeCompare(b)),
+      cities: uniqueCities.sort((a, b) => a.localeCompare(b)),
+      provinces: uniqueProvinces.sort((a, b) => a.localeCompare(b)),
       stats: {
         total: pharmacies.length,
         filtered: filtered.length,
@@ -66,6 +120,19 @@ export function PharmacySidebar({
       },
     };
   }, [pharmacies, filters]);
+
+  const handleFiltersChange = (next: Filters) => {
+    // Enforce hierarchy: changing country resets province+city; changing province resets city.
+    if (next.country !== filters.country) {
+      setFilters({ ...next, province: '', city: '' });
+      return;
+    }
+    if (next.province !== filters.province) {
+      setFilters({ ...next, city: '' });
+      return;
+    }
+    setFilters(next);
+  };
 
   return (
     <div className="flex flex-col h-full bg-card/50 backdrop-blur-sm border-r border-border">
@@ -81,7 +148,8 @@ export function PharmacySidebar({
         
         <PharmacyFilters
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
+          countries={countries}
           cities={cities}
           provinces={provinces}
           onClearFilters={() => setFilters(initialFilters)}

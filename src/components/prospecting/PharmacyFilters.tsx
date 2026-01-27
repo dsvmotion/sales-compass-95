@@ -8,11 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS, EUROPEAN_COUNTRIES } from '@/types/pharmacy';
+import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
 
 interface PharmacyFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  countries: string[];
   cities: string[];
   provinces: string[];
   onClearFilters: () => void;
@@ -21,6 +22,7 @@ interface PharmacyFiltersProps {
 export function PharmacyFilters({
   filters,
   onFiltersChange,
+  countries,
   cities,
   provinces,
   onClearFilters,
@@ -47,6 +49,24 @@ export function PharmacyFilters({
 
       {/* Filter Grid */}
       <div className="grid grid-cols-2 gap-2">
+        {/* Country */}
+        <Select
+          value={filters.country}
+          onValueChange={(value) => onFiltersChange({ ...filters, country: value === 'all' ? '' : value })}
+        >
+          <SelectTrigger className="bg-background/50">
+            <SelectValue placeholder="Country" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Countries</SelectItem>
+            {countries.map((country) => (
+              <SelectItem key={country} value={country}>
+                {country}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* City */}
         <Select
           value={filters.city}
@@ -79,24 +99,6 @@ export function PharmacyFilters({
             {provinces.map((province) => (
               <SelectItem key={province} value={province}>
                 {province}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Country */}
-        <Select
-          value={filters.country}
-          onValueChange={(value) => onFiltersChange({ ...filters, country: value === 'all' ? '' : value })}
-        >
-          <SelectTrigger className="bg-background/50">
-            <SelectValue placeholder="Country" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Countries</SelectItem>
-            {EUROPEAN_COUNTRIES.map((country) => (
-              <SelectItem key={country} value={country}>
-                {country}
               </SelectItem>
             ))}
           </SelectContent>
