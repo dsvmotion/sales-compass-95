@@ -50,6 +50,13 @@ export function ProspectingMap({
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const debouncedBoundsChanged = useRef<ReturnType<typeof debounce> | null>(null);
+  const onBoundsChangedRef = useRef<ProspectingMapProps['onBoundsChanged']>(onBoundsChanged);
+  const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);
+  const zoomChangedRef = useRef(false);
+
+  useEffect(() => {
+    onBoundsChangedRef.current = onBoundsChanged;
+  }, [onBoundsChanged]);
 
   const getMarkerIcon = useCallback(
     (pharmacy: Pharmacy, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
@@ -78,8 +85,9 @@ export function ProspectingMap({
     [markerIconUrl]
   );
 
-  const initMap = useCallback(() => {
+  const initMapOnce = useCallback(() => {
     if (!mapRef.current || typeof google === 'undefined') return;
+    if (mapInstanceRef.current) return; // critical: never re-create the map instance
 
     const map = new google.maps.Map(mapRef.current, {
       center,
@@ -123,33 +131,78 @@ export function ProspectingMap({
     mapInstanceRef.current = map;
     infoWindowRef.current = new google.maps.InfoWindow();
     setIsMapReady(true);
-
-    // Airbnb-style: trigger only when interaction ENDS (idle)
-    // Debounced to avoid rapid-fire calls and to keep UI calm.
-    if (onBoundsChanged) {
-      // Create debounced handler - 800ms delay after map becomes idle
-      debouncedBoundsChanged.current = debounce((bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => {
-        onBoundsChanged(bounds, center);
-      }, 800);
-      
-      map.addListener('idle', () => {
-        const bounds = map.getBounds();
-        const center = map.getCenter();
-        if (bounds && center && debouncedBoundsChanged.current) {
-          // Never allow async exceptions to crash the map loop
-          try {
-            debouncedBoundsChanged.current(bounds, center);
-          } catch (e) {
-            console.error('onBoundsChanged error:', e);
-          }
-        }
-      });
-    }
     
     if (onMapReady) {
       onMapReady(map);
     }
-  }, [center, onMapReady, onBoundsChanged]);
+  }, [center, onMapReady]);
+
+  const detachMapListeners = useCallback(() => {
+    for (const l of mapListenersRef.current) {
+      l.remove();
+    }
+    mapListenersRef.current = [];
+  }, []);
+
+  const attachAutoSearchListeners = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    detachMapListeners();
+
+    const handler = onBoundsChangedRef.current;
+    if (!handler) return;
+
+    // Debounced dispatcher (prevents storms from rapid interactions)
+    if (!debouncedBoundsChanged.current) {
+      debouncedBoundsChanged.current = debounce((bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => {
+        // Defensive: never let a rejected promise crash the map event loop
+        try {
+          void handler(bounds, center);
+        } catch (e) {
+          console.error('onBoundsChanged error:', e);
+        }
+      }, 650);
+    }
+
+    const trigger = () => {
+      const bounds = map.getBounds();
+      const center = map.getCenter();
+      if (!bounds || !center || !debouncedBoundsChanged.current) return;
+      debouncedBoundsChanged.current(bounds, center);
+    };
+
+    // REQUIRED behavior:
+    // - dragend (pan end)
+    // - zoomend (no native zoomend in Maps JS => emulate via zoom_changed -> idle)
+    mapListenersRef.current.push(
+      map.addListener('dragend', () => {
+        try {
+          trigger();
+        } catch (e) {
+          console.error('dragend trigger failed:', e);
+        }
+      })
+    );
+
+    mapListenersRef.current.push(
+      map.addListener('zoom_changed', () => {
+        zoomChangedRef.current = true;
+      })
+    );
+
+    mapListenersRef.current.push(
+      map.addListener('idle', () => {
+        if (!zoomChangedRef.current) return;
+        zoomChangedRef.current = false;
+        try {
+          trigger();
+        } catch (e) {
+          console.error('zoomend trigger failed:', e);
+        }
+      })
+    );
+  }, [detachMapListeners]);
 
   const updateMarkers = useCallback(() => {
     if (!mapInstanceRef.current || typeof google === 'undefined' || !isMapReady) return;
@@ -239,28 +292,51 @@ export function ProspectingMap({
     }
 
     if (typeof google !== 'undefined' && google.maps) {
-      initMap();
+      initMapOnce();
       return;
     }
 
+    // Load script once; never remove it on re-renders (removing it can crash existing map instances)
+    const existing = document.getElementById('google-maps-js');
+    if (existing) {
+      // If script exists but google isn't ready yet, wait for it
+      existing.addEventListener('load', initMapOnce);
+      return () => existing.removeEventListener('load', initMapOnce);
+    }
+
     const script = document.createElement('script');
+    script.id = 'google-maps-js';
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`;
     script.async = true;
     script.defer = true;
-    script.onload = initMap;
-    
+    script.onload = initMapOnce;
     document.head.appendChild(script);
+  }, [initMapOnce]);
 
+  // Attach/detach AutoSearch listeners when the callback is toggled
+  useEffect(() => {
+    if (!isMapReady) return;
+    attachAutoSearchListeners();
     return () => {
-      // Clean up debounced function
+      detachMapListeners();
+    };
+  }, [attachAutoSearchListeners, detachMapListeners, isMapReady, onBoundsChanged]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      detachMapListeners();
       if (debouncedBoundsChanged.current) {
         debouncedBoundsChanged.current.cancel();
       }
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+
+      // Remove markers safely
+      for (const [, marker] of markersByIdRef.current.entries()) {
+        marker.setMap(null);
       }
+      markersByIdRef.current.clear();
     };
-  }, [initMap]);
+  }, [detachMapListeners]);
 
   // Update markers when pharmacies change
   useEffect(() => {
