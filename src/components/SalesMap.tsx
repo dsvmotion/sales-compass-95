@@ -132,9 +132,9 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
     [onSaleSelect]
   );
 
-  // Monochrome marker colors for light mode
+  // Customer type colors: Pharmacy = Green (client), WooCommerce client = Violet
   const getMarkerIcon = useCallback((type: 'pharmacy' | 'client') => {
-    const color = type === 'pharmacy' ? '#1f2937' : '#9ca3af'; // gray-800 / gray-400
+    const color = type === 'pharmacy' ? '#22c55e' : '#8b5cf6'; // green-500 / violet-500
     return {
       path: google.maps.SymbolPath.CIRCLE,
       fillColor: color,
@@ -193,8 +193,8 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       sale.customerType === 'pharmacy'
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-violet-100 text-violet-800'
                     }`}
                   >
                     {sale.customerType === 'pharmacy' ? 'Pharmacy' : 'Client'}

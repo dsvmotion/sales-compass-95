@@ -23,9 +23,9 @@ function SortIcon({ field, currentField, direction }: { field: SortField; curren
 
 function StatusBadge({ status }: { status: 'not_contacted' | 'contacted' | 'client' }) {
   const styles = {
-    not_contacted: 'bg-gray-100 text-gray-600',
-    contacted: 'bg-gray-200 text-gray-700',
-    client: 'bg-gray-800 text-white',
+    not_contacted: 'bg-yellow-100 text-yellow-800', // Yellow
+    contacted: 'bg-blue-100 text-blue-800', // Blue
+    client: 'bg-green-100 text-green-800', // Green
   };
 
   const labels = {

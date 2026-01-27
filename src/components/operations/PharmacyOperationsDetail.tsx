@@ -35,9 +35,9 @@ interface PharmacyOperationsDetailProps {
 
 function StatusBadge({ status }: { status: 'not_contacted' | 'contacted' | 'client' }) {
   const styles = {
-    not_contacted: 'bg-gray-100 text-gray-600',
-    contacted: 'bg-gray-200 text-gray-700',
-    client: 'bg-gray-800 text-white',
+    not_contacted: 'bg-yellow-100 text-yellow-800', // Yellow
+    contacted: 'bg-blue-100 text-blue-800', // Blue
+    client: 'bg-green-100 text-green-800', // Green
   };
 
   const labels = {
@@ -180,7 +180,7 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
 
       {/* Documents */}
       <div className="space-y-2">
-        {/* Invoice */}
+        {/* Invoice - RED when missing */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-gray-500" />
@@ -188,6 +188,7 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
           </div>
           {invoice ? (
             <div className="flex items-center gap-1">
+              <span className="text-xs text-green-600 mr-2">Uploaded</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -221,17 +222,17 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
                 variant="outline"
                 size="sm"
                 onClick={() => invoiceInputRef.current?.click()}
-                className="h-7 px-2 border-gray-300"
+                className="h-7 px-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
                 disabled={uploadDocument.isPending}
               >
                 <Upload className="h-3.5 w-3.5 mr-1" />
-                Upload
+                Upload Invoice
               </Button>
             </>
           )}
         </div>
 
-        {/* Receipt */}
+        {/* Receipt - GREEN when invoice uploaded but no receipt */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Receipt className="h-4 w-4 text-gray-500" />
@@ -239,6 +240,7 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
           </div>
           {receipt ? (
             <div className="flex items-center gap-1">
+              <span className="text-xs text-green-600 mr-2">Paid</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -256,7 +258,8 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
-          ) : (
+          ) : invoice ? (
+            // Only show receipt upload when invoice is already uploaded
             <>
               <input
                 ref={receiptInputRef}
@@ -272,13 +275,16 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
                 variant="outline"
                 size="sm"
                 onClick={() => receiptInputRef.current?.click()}
-                className="h-7 px-2 border-gray-300"
+                className="h-7 px-2 bg-green-50 border-green-300 text-green-700 hover:bg-green-100 hover:text-green-800"
                 disabled={uploadDocument.isPending}
               >
                 <Upload className="h-3.5 w-3.5 mr-1" />
-                Upload
+                Upload Receipt
               </Button>
             </>
+          ) : (
+            // Invoice not uploaded yet - receipt button disabled
+            <span className="text-xs text-gray-400">Upload invoice first</span>
           )}
         </div>
       </div>
