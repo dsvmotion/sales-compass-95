@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Pharmacy, PharmacyFilters as Filters } from '@/types/pharmacy';
 import { PharmacyFilters } from './PharmacyFilters';
 import { PharmacyListItem } from './PharmacyListItem';
+import { PharmacySelectionBar } from './PharmacySelectionBar';
 
 interface PharmacySidebarProps {
   pharmacies: Pharmacy[];
@@ -21,6 +22,13 @@ interface PharmacySidebarProps {
   onSearch: () => void;
   isSearching: boolean;
   progress: { found: number; cached: number };
+  // Selection props
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  onSaveSelected: () => void;
+  isSaving: boolean;
 }
 
 export function PharmacySidebar({
@@ -39,6 +47,12 @@ export function PharmacySidebar({
   onSearch,
   isSearching,
   progress,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
+  onSaveSelected,
+  isSaving,
 }: PharmacySidebarProps) {
   // Filter displayed pharmacies by text search and status
   const displayedPharmacies = useMemo(() => {
@@ -78,6 +92,13 @@ export function PharmacySidebar({
       client: statusCounts['client'] || 0,
     };
   }, [pharmacies, displayedPharmacies]);
+
+  // Check if all displayed pharmacies are selected
+  const allSelected = displayedPharmacies.length > 0 && 
+    displayedPharmacies.every(p => selectedIds.has(p.id));
+
+  // Count of selected pharmacies that are currently displayed
+  const displayedSelectedCount = displayedPharmacies.filter(p => selectedIds.has(p.id)).length;
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -134,6 +155,19 @@ export function PharmacySidebar({
         </div>
       )}
 
+      {/* Selection Bar - only show when we have results */}
+      {hasSearched && !isSearching && pharmacies.length > 0 && (
+        <PharmacySelectionBar
+          totalCount={displayedPharmacies.length}
+          selectedCount={displayedSelectedCount}
+          allSelected={allSelected}
+          onSelectAll={onSelectAll}
+          onDeselectAll={onDeselectAll}
+          onSave={onSaveSelected}
+          isSaving={isSaving}
+        />
+      )}
+
       {/* List */}
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-2">
@@ -161,6 +195,8 @@ export function PharmacySidebar({
                 key={pharmacy.id}
                 pharmacy={pharmacy}
                 isSelected={selectedPharmacyId === pharmacy.id}
+                isChecked={selectedIds.has(pharmacy.id)}
+                onCheck={(checked) => onToggleSelect(pharmacy.id)}
                 onClick={() => onSelectPharmacy(pharmacy)}
               />
             ))

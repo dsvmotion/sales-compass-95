@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, RefreshCw, Building2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building2, MapPin, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { usePharmaciesWithOrders } from '@/hooks/usePharmacyOperations';
@@ -25,7 +25,8 @@ export default function PharmacyOperations() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [selectedPharmacy, setSelectedPharmacy] = useState<PharmacyWithOrders | null>(null);
 
-  const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders();
+  // Only fetch saved pharmacies (savedOnly = true)
+  const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders(true);
   const queryClient = useQueryClient();
 
   // Geography options from unified normalized tables
@@ -121,6 +122,9 @@ export default function PharmacyOperations() {
     queryClient.invalidateQueries({ queryKey: ['pharmacy-documents'] });
   }, [queryClient]);
 
+  // Empty state when no saved pharmacies
+  const showEmptyState = !isLoading && pharmacies.length === 0;
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
@@ -137,58 +141,90 @@ export default function PharmacyOperations() {
             <Building2 className="h-5 w-5 text-gray-700" />
             <h1 className="font-semibold text-lg">Pharmacy Operations</h1>
           </div>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-            {displayedPharmacies.length} of {pharmacies.length} pharmacies
-          </span>
+          {!showEmptyState && (
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+              {displayedPharmacies.length} of {pharmacies.length} saved pharmacies
+            </span>
+          )}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="border-gray-300"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/prospecting">
+            <Button variant="outline" size="sm" className="border-gray-300">
+              <MapPin className="h-4 w-4 mr-2" />
+              Find Pharmacies
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="border-gray-300"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </header>
 
-      {/* Filters */}
-      <OperationsFiltersBar
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onClearFilters={() => setFilters(initialFilters)}
-        countries={countries}
-        provinces={provinces}
-        cities={cities}
-      />
-
-      {/* Main Content */}
-      <div className="flex">
-        {/* Table */}
-        <div className={`flex-1 overflow-auto ${selectedPharmacy ? 'max-w-[calc(100%-400px)]' : ''}`}>
-          <OperationsTable
-            pharmacies={displayedPharmacies}
-            isLoading={isLoading}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            selectedPharmacyId={selectedPharmacy?.id || null}
-            onSelectPharmacy={setSelectedPharmacy}
-          />
-        </div>
-
-        {/* Detail Panel */}
-        {selectedPharmacy && (
-          <div className="w-[400px] border-l border-gray-200 bg-gray-50">
-            <PharmacyOperationsDetail
-              pharmacy={selectedPharmacy}
-              onClose={() => setSelectedPharmacy(null)}
-            />
+      {showEmptyState ? (
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center py-24 px-4">
+          <div className="bg-gray-100 rounded-full p-6 mb-6">
+            <Building2 className="h-12 w-12 text-gray-400" />
           </div>
-        )}
-      </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Saved Pharmacies</h2>
+          <p className="text-gray-500 text-center max-w-md mb-6">
+            You haven't saved any pharmacies yet. Use the Prospecting Map to discover pharmacies 
+            and save them here for management.
+          </p>
+          <Link to="/prospecting">
+            <Button className="bg-primary hover:bg-primary/90">
+              <Search className="h-4 w-4 mr-2" />
+              Go to Pharmacy Prospecting
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Filters */}
+          <OperationsFiltersBar
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={() => setFilters(initialFilters)}
+            countries={countries}
+            provinces={provinces}
+            cities={cities}
+          />
+
+          {/* Main Content */}
+          <div className="flex">
+            {/* Table */}
+            <div className={`flex-1 overflow-auto ${selectedPharmacy ? 'max-w-[calc(100%-400px)]' : ''}`}>
+              <OperationsTable
+                pharmacies={displayedPharmacies}
+                isLoading={isLoading}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                selectedPharmacyId={selectedPharmacy?.id || null}
+                onSelectPharmacy={setSelectedPharmacy}
+              />
+            </div>
+
+            {/* Detail Panel */}
+            {selectedPharmacy && (
+              <div className="w-[400px] border-l border-gray-200 bg-gray-50">
+                <PharmacyOperationsDetail
+                  pharmacy={selectedPharmacy}
+                  onClose={() => setSelectedPharmacy(null)}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

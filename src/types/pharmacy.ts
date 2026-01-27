@@ -19,6 +19,7 @@ export interface Pharmacy {
   google_data: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  saved_at: string | null;
 }
 
 export interface PharmacyFilters {

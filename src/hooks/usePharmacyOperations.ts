@@ -60,14 +60,21 @@ export function usePharmacyDocuments() {
   });
 }
 
-export function usePharmaciesWithOrders() {
+export function usePharmaciesWithOrders(savedOnly: boolean = true) {
   const { data: pharmacies = [], isLoading: pharmaciesLoading } = useQuery({
-    queryKey: ['pharmacies'],
+    queryKey: ['pharmacies', savedOnly ? 'saved' : 'all'],
     queryFn: async (): Promise<Pharmacy[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('pharmacies')
         .select('*')
         .order('name');
+
+      // Only fetch saved pharmacies for Operations view
+      if (savedOnly) {
+        query = query.not('saved_at', 'is', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching pharmacies:', error);

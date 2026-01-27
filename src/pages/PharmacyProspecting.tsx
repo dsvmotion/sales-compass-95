@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Building2, XCircle } from 'lucide-react';
+import { ArrowLeft, XCircle, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PharmacySidebar } from '@/components/prospecting/PharmacySidebar';
@@ -7,6 +7,7 @@ import { ProspectingMap } from '@/components/prospecting/ProspectingMap';
 import { PharmacyDetailPanel } from '@/components/prospecting/PharmacyDetailPanel';
 import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 import { useProspectingSearch } from '@/hooks/useProspectingSearch';
+import { useSavePharmacies } from '@/hooks/useSavePharmacies';
 import { Pharmacy, PharmacyFilters as Filters } from '@/types/pharmacy';
 
 const initialFilters: Filters = {
@@ -20,6 +21,7 @@ const initialFilters: Filters = {
 export default function PharmacyProspecting() {
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Geography options from unified normalized tables
   const { countries, provinces, cities, isLoading: isLoadingOptions } = useGeographyOptions(
@@ -37,6 +39,9 @@ export default function PharmacyProspecting() {
     clearResults,
     cancelSearch,
   } = useProspectingSearch();
+
+  // Save pharmacies mutation
+  const savePharmacies = useSavePharmacies();
 
   // Filter displayed results by text search and status
   const displayedPharmacies = useMemo(() => {
@@ -85,10 +90,12 @@ export default function PharmacyProspecting() {
   const handleClearFilters = useCallback(() => {
     setFilters(initialFilters);
     setSelectedPharmacy(null);
+    setSelectedIds(new Set());
     clearResults();
   }, [clearResults]);
 
   const handleSearch = useCallback(() => {
+    setSelectedIds(new Set()); // Clear selection on new search
     executeSearch({
       country: filters.country,
       province: filters.province,
@@ -99,6 +106,36 @@ export default function PharmacyProspecting() {
   const handleCancelSearch = useCallback(() => {
     cancelSearch();
   }, [cancelSearch]);
+
+  // Selection handlers
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(new Set(displayedPharmacies.map(p => p.id)));
+  }, [displayedPharmacies]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleSaveSelected = useCallback(() => {
+    const ids = Array.from(selectedIds);
+    savePharmacies.mutate(ids, {
+      onSuccess: () => {
+        setSelectedIds(new Set());
+      },
+    });
+  }, [selectedIds, savePharmacies]);
 
   return (
     <div className="h-screen flex flex-col bg-white text-gray-900">
@@ -153,6 +190,12 @@ export default function PharmacyProspecting() {
             onSearch={handleSearch}
             isSearching={isSearching}
             progress={progress}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            onSaveSelected={handleSaveSelected}
+            isSaving={savePharmacies.isPending}
           />
         </div>
 
