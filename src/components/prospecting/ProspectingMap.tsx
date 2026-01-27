@@ -2,37 +2,15 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Pharmacy, STATUS_COLORS } from '@/types/pharmacy';
+import { Filter } from 'lucide-react';
 
 interface ProspectingMapProps {
   pharmacies: Pharmacy[];
   selectedPharmacyId: string | null;
   onSelectPharmacy: (pharmacy: Pharmacy) => void;
   onMapReady?: (map: google.maps.Map) => void;
-  onBoundsChanged?: (bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => void;
   center?: { lat: number; lng: number };
-  markerIconUrl?: string;
-}
-
-// Debounce utility
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T & { cancel: () => void } {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
-  const debouncedFn = ((...args: Parameters<T>) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      fn(...args);
-      timeoutId = null;
-    }, delay);
-  }) as T & { cancel: () => void };
-  
-  debouncedFn.cancel = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  };
-  
-  return debouncedFn;
+  hasActiveGeoFilter: boolean;
 }
 
 export function ProspectingMap({
@@ -40,49 +18,29 @@ export function ProspectingMap({
   selectedPharmacyId,
   onSelectPharmacy,
   onMapReady,
-  onBoundsChanged,
   center = { lat: 40.4168, lng: -3.7038 }, // Madrid
-  markerIconUrl,
+  hasActiveGeoFilter,
 }: ProspectingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersByIdRef = useRef<Map<string, google.maps.Marker>>(new Map());
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const debouncedBoundsChanged = useRef<ReturnType<typeof debounce> | null>(null);
-  const onBoundsChangedRef = useRef<ProspectingMapProps['onBoundsChanged']>(onBoundsChanged);
-  const mapListenersRef = useRef<google.maps.MapsEventListener[]>([]);
-  const zoomChangedRef = useRef(false);
 
-  useEffect(() => {
-    onBoundsChangedRef.current = onBoundsChanged;
-  }, [onBoundsChanged]);
-
+  // Get marker icon using default Google marker with status color
   const getMarkerIcon = useCallback(
-    (pharmacy: Pharmacy, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
-      // Prefer custom icon when provided
-      if (markerIconUrl) {
-        const width = isSelected ? 44 : 36;
-        const height = isSelected ? 54 : 44;
-        return {
-          url: markerIconUrl,
-          scaledSize: new google.maps.Size(width, height),
-          anchor: new google.maps.Point(width / 2, height),
-        };
-      }
-
-      // Fallback (should be replaced by the provided icon)
+    (pharmacy: Pharmacy, isSelected: boolean): google.maps.Symbol => {
       const color = STATUS_COLORS[pharmacy.commercial_status].pin;
       return {
-        path: google.maps.SymbolPath.CIRCLE,
+        path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
         fillColor: color,
         fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: isSelected ? 3 : 2,
-        scale: isSelected ? 12 : 9,
+        strokeColor: isSelected ? '#ffffff' : '#333333',
+        strokeWeight: isSelected ? 3 : 1.5,
+        scale: isSelected ? 8 : 6,
       };
     },
-    [markerIconUrl]
+    []
   );
 
   const initMapOnce = useCallback(() => {
@@ -136,73 +94,6 @@ export function ProspectingMap({
       onMapReady(map);
     }
   }, [center, onMapReady]);
-
-  const detachMapListeners = useCallback(() => {
-    for (const l of mapListenersRef.current) {
-      l.remove();
-    }
-    mapListenersRef.current = [];
-  }, []);
-
-  const attachAutoSearchListeners = useCallback(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    detachMapListeners();
-
-    const handler = onBoundsChangedRef.current;
-    if (!handler) return;
-
-    // Debounced dispatcher (prevents storms from rapid interactions)
-    if (!debouncedBoundsChanged.current) {
-      debouncedBoundsChanged.current = debounce((bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => {
-        // Defensive: never let a rejected promise crash the map event loop
-        try {
-          void handler(bounds, center);
-        } catch (e) {
-          console.error('onBoundsChanged error:', e);
-        }
-      }, 650);
-    }
-
-    const trigger = () => {
-      const bounds = map.getBounds();
-      const center = map.getCenter();
-      if (!bounds || !center || !debouncedBoundsChanged.current) return;
-      debouncedBoundsChanged.current(bounds, center);
-    };
-
-    // REQUIRED behavior:
-    // - dragend (pan end)
-    // - zoomend (no native zoomend in Maps JS => emulate via zoom_changed -> idle)
-    mapListenersRef.current.push(
-      map.addListener('dragend', () => {
-        try {
-          trigger();
-        } catch (e) {
-          console.error('dragend trigger failed:', e);
-        }
-      })
-    );
-
-    mapListenersRef.current.push(
-      map.addListener('zoom_changed', () => {
-        zoomChangedRef.current = true;
-      })
-    );
-
-    mapListenersRef.current.push(
-      map.addListener('idle', () => {
-        if (!zoomChangedRef.current) return;
-        zoomChangedRef.current = false;
-        try {
-          trigger();
-        } catch (e) {
-          console.error('zoomend trigger failed:', e);
-        }
-      })
-    );
-  }, [detachMapListeners]);
 
   const updateMarkers = useCallback(() => {
     if (!mapInstanceRef.current || typeof google === 'undefined' || !isMapReady) return;
@@ -313,30 +204,16 @@ export function ProspectingMap({
     document.head.appendChild(script);
   }, [initMapOnce]);
 
-  // Attach/detach AutoSearch listeners when the callback is toggled
-  useEffect(() => {
-    if (!isMapReady) return;
-    attachAutoSearchListeners();
-    return () => {
-      detachMapListeners();
-    };
-  }, [attachAutoSearchListeners, detachMapListeners, isMapReady, onBoundsChanged]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      detachMapListeners();
-      if (debouncedBoundsChanged.current) {
-        debouncedBoundsChanged.current.cancel();
-      }
-
       // Remove markers safely
       for (const [, marker] of markersByIdRef.current.entries()) {
         marker.setMap(null);
       }
       markersByIdRef.current.clear();
     };
-  }, [detachMapListeners]);
+  }, []);
 
   // Update markers when pharmacies change
   useEffect(() => {
@@ -354,7 +231,64 @@ export function ProspectingMap({
     }
   }, [selectedPharmacyId, pharmacies]);
 
+  // Fit bounds when pharmacies change significantly
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isMapReady || pharmacies.length === 0) return;
+
+    const map = mapInstanceRef.current;
+    const bounds = new google.maps.LatLngBounds();
+    
+    pharmacies.forEach((pharmacy) => {
+      bounds.extend({ lat: pharmacy.lat, lng: pharmacy.lng });
+    });
+
+    // Only fit bounds if we have pharmacies and no specific selection
+    if (!selectedPharmacyId) {
+      map.fitBounds(bounds, 50);
+      
+      // Prevent over-zoom on single result
+      const listener = google.maps.event.addListener(map, 'idle', () => {
+        const currentZoom = map.getZoom();
+        if (currentZoom && currentZoom > 15) {
+          map.setZoom(15);
+        }
+        google.maps.event.removeListener(listener);
+      });
+    }
+  }, [pharmacies, isMapReady, selectedPharmacyId]);
+
   return (
-    <div ref={mapRef} className="w-full h-full rounded-lg" />
+    <div className="relative w-full h-full">
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      
+      {/* Empty state overlay when no filters applied */}
+      {!hasActiveGeoFilter && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
+          <div className="text-center p-8 max-w-md">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Filter className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Select filters to display pharmacies</h3>
+            <p className="text-muted-foreground text-sm">
+              Use the Country, Province, or City filters in the sidebar to view pharmacies on the map.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-gray-500" />
+                <span>Not contacted</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-yellow-500" />
+                <span>Contacted</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-green-500" />
+                <span>Client</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
