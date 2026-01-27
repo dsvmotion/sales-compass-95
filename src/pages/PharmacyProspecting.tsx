@@ -21,7 +21,7 @@ export default function PharmacyProspecting() {
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  // Geography options (hierarchical)
+  // Geography options from unified normalized tables
   const { countries, provinces, cities, isLoading: isLoadingOptions } = useGeographyOptions(
     filters.country,
     filters.province

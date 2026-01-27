@@ -28,8 +28,8 @@ export default function PharmacyOperations() {
   const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders();
   const queryClient = useQueryClient();
 
-  // Geography options (hierarchical)
-  const { provinces, cities } = useGeographyOptions(filters.country, filters.province);
+  // Geography options from unified normalized tables
+  const { countries, provinces, cities } = useGeographyOptions(filters.country, filters.province);
 
   // Filter and sort pharmacies
   const displayedPharmacies = useMemo(() => {
@@ -44,10 +44,10 @@ export default function PharmacyOperations() {
         if (!matchesSearch) return false;
       }
 
-      // Geographic filters - use partial match for Google autocomplete values
+      // Geographic filters - exact match from normalized data
       if (filters.country && pharmacy.country !== filters.country) return false;
-      if (filters.province && !pharmacy.province?.toLowerCase().includes(filters.province.toLowerCase())) return false;
-      if (filters.city && !pharmacy.city?.toLowerCase().includes(filters.city.toLowerCase())) return false;
+      if (filters.province && pharmacy.province !== filters.province) return false;
+      if (filters.city && pharmacy.city !== filters.city) return false;
 
       // Commercial status
       if (filters.commercialStatus !== 'all' && pharmacy.commercialStatus !== filters.commercialStatus) return false;
@@ -159,6 +159,7 @@ export default function PharmacyOperations() {
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onClearFilters={() => setFilters(initialFilters)}
+        countries={countries}
         provinces={provinces}
         cities={cities}
       />

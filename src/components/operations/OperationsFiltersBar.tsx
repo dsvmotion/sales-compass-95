@@ -9,12 +9,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { OperationsFilters } from '@/types/operations';
-import { EUROPEAN_COUNTRIES } from '@/hooks/useGeographyOptions';
 
 interface OperationsFiltersBarProps {
   filters: OperationsFilters;
   onFiltersChange: (filters: OperationsFilters) => void;
   onClearFilters: () => void;
+  countries: string[];
   provinces: string[];
   cities: string[];
 }
@@ -23,6 +23,7 @@ export function OperationsFiltersBar({
   filters,
   onFiltersChange,
   onClearFilters,
+  countries,
   provinces,
   cities,
 }: OperationsFiltersBarProps) {
@@ -47,7 +48,7 @@ export function OperationsFiltersBar({
         />
       </div>
 
-      {/* Country - Full European list */}
+      {/* Country - From normalized geography tables */}
       <Select
         value={filters.country || 'all'}
         onValueChange={(value) => onFiltersChange({ 
@@ -60,9 +61,9 @@ export function OperationsFiltersBar({
         <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
           <SelectValue placeholder="Country" />
         </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 max-h-60">
+        <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
           <SelectItem value="all">All Countries</SelectItem>
-          {EUROPEAN_COUNTRIES.map((country) => (
+          {countries.map((country) => (
             <SelectItem key={country} value={country}>
               {country}
             </SelectItem>
@@ -70,7 +71,7 @@ export function OperationsFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* Province */}
+      {/* Province - From normalized geography tables */}
       <Select
         value={filters.province || 'all'}
         onValueChange={(value) => onFiltersChange({ 
@@ -81,9 +82,9 @@ export function OperationsFiltersBar({
         disabled={!filters.country}
       >
         <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-          <SelectValue placeholder={filters.country ? 'Province' : 'Select Country'} />
+          <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Province' : 'No provinces') : 'Select Country'} />
         </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 max-h-60">
+        <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
           <SelectItem value="all">All Provinces</SelectItem>
           {provinces.map((province) => (
             <SelectItem key={province} value={province}>
@@ -93,16 +94,16 @@ export function OperationsFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* City */}
+      {/* City - From normalized geography tables */}
       <Select
         value={filters.city || 'all'}
         onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
         disabled={!filters.province}
       >
         <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
-          <SelectValue placeholder={filters.province ? 'City' : 'Select Province'} />
+          <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'City' : 'No cities') : 'Select Province'} />
         </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 max-h-60">
+        <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
           <SelectItem value="all">All Cities</SelectItem>
           {cities.map((city) => (
             <SelectItem key={city} value={city}>
@@ -120,7 +121,7 @@ export function OperationsFiltersBar({
         <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200">
+        <SelectContent className="bg-white border-gray-200 z-50">
           <SelectItem value="all">All Statuses</SelectItem>
           <SelectItem value="not_contacted">Not Contacted</SelectItem>
           <SelectItem value="contacted">Contacted</SelectItem>
@@ -136,7 +137,7 @@ export function OperationsFiltersBar({
         <SelectTrigger className="w-36 bg-white border-gray-300 text-gray-900">
           <SelectValue placeholder="Payment" />
         </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200">
+        <SelectContent className="bg-white border-gray-200 z-50">
           <SelectItem value="all">All Payments</SelectItem>
           <SelectItem value="paid">Paid</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
