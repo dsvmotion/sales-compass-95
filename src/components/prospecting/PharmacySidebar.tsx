@@ -15,6 +15,8 @@ interface PharmacySidebarProps {
   onClearFilters: () => void;
   hasSearched: boolean;
   countries: string[];
+  provinces: string[];
+  cities: string[];
   isLoadingOptions: boolean;
   onSearch: () => void;
   isSearching: boolean;
@@ -31,6 +33,8 @@ export function PharmacySidebar({
   onClearFilters,
   hasSearched,
   countries,
+  provinces,
+  cities,
   isLoadingOptions,
   onSearch,
   isSearching,
@@ -91,6 +95,8 @@ export function PharmacySidebar({
           filters={filters}
           onFiltersChange={onFiltersChange}
           countries={countries}
+          provinces={provinces}
+          cities={cities}
           onClearFilters={onClearFilters}
           onSearch={onSearch}
           isSearching={isSearching}
@@ -114,15 +120,15 @@ export function PharmacySidebar({
       {hasSearched && !isSearching && pharmacies.length > 0 && (
         <div className="px-4 py-2 border-b border-gray-200 flex items-center gap-4 text-xs bg-gray-50">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-400" />
+            <span className="w-2 h-2 rounded-full bg-yellow-500" />
             <span className="text-gray-600">{stats.notContacted}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-600" />
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
             <span className="text-gray-600">{stats.contacted}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-gray-800" />
+            <span className="w-2 h-2 rounded-full bg-green-500" />
             <span className="text-gray-600">{stats.client}</span>
           </div>
         </div>

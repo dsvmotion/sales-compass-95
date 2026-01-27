@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ShoppingCart, TrendingUp, Users, MapPin, RefreshCw, AlertCircle, ClipboardList } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Users, MapPin, RefreshCw, AlertCircle, ClipboardList, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SalesMap } from '@/components/SalesMap';
 import { useWooCommerceOrders } from '@/hooks/useWooCommerceOrders';
@@ -7,26 +7,45 @@ import { Sale } from '@/types/sale';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EUROPEAN_COUNTRIES } from '@/hooks/useGeographyOptions';
 
 const Index = () => {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   
   const [filters, setFilters] = useState({
+    country: '',
+    province: '',
     city: '',
     customerType: 'all' as 'pharmacy' | 'client' | 'all',
   });
 
   const { data: sales = [], isLoading, error, refetch } = useWooCommerceOrders();
 
-  const uniqueCities = useMemo(() => {
-    const cities = sales
-      .map(s => s.city)
-      .filter((city): city is string => !!city);
-    return [...new Set(cities)].sort();
-  }, [sales]);
+  // Derive provinces and cities from sales data with hierarchy
+  const provinces = useMemo(() => {
+    if (!filters.country) return [];
+    const provincesSet = new Set(
+      sales
+        .filter(s => s.country === filters.country && s.province)
+        .map(s => s.province)
+    );
+    return [...provincesSet].sort();
+  }, [sales, filters.country]);
+
+  const cities = useMemo(() => {
+    if (!filters.province) return [];
+    const citiesSet = new Set(
+      sales
+        .filter(s => s.province === filters.province && s.city)
+        .map(s => s.city)
+    );
+    return [...citiesSet].sort();
+  }, [sales, filters.province]);
 
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
+      if (filters.country && sale.country !== filters.country) return false;
+      if (filters.province && sale.province !== filters.province) return false;
       if (filters.city && sale.city !== filters.city) return false;
       if (filters.customerType !== 'all' && sale.customerType !== filters.customerType) return false;
       return true;
@@ -53,10 +72,34 @@ const Index = () => {
   }, [filteredSales]);
 
   const clearFilters = () => {
-    setFilters({ city: '', customerType: 'all' });
+    setFilters({ country: '', province: '', city: '', customerType: 'all' });
   };
 
-  const hasActiveFilters = filters.city || filters.customerType !== 'all';
+  const hasActiveFilters = filters.country || filters.province || filters.city || filters.customerType !== 'all';
+
+  const handleCountryChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      country: value === 'all' ? '' : value,
+      province: '',
+      city: '',
+    }));
+  };
+
+  const handleProvinceChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      province: value === 'all' ? '' : value,
+      city: '',
+    }));
+  };
+
+  const handleCityChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      city: value === 'all' ? '' : value,
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-900 p-4 md:p-6">
@@ -143,24 +186,54 @@ const Index = () => {
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium text-gray-500">Filters:</span>
               
-              <Select
-                value={filters.city || 'all-cities'}
-                onValueChange={(value) => setFilters(prev => ({ 
-                  ...prev, 
-                  city: value === 'all-cities' ? '' : value 
-                }))}
-              >
+              {/* Country */}
+              <Select value={filters.country || 'all'} onValueChange={handleCountryChange}>
                 <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
-                  <SelectValue placeholder="All Cities" />
+                  <SelectValue placeholder="Country" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200">
-                  <SelectItem value="all-cities">All Cities</SelectItem>
-                  {uniqueCities.map(city => (
+                <SelectContent className="bg-white border-gray-200 max-h-60">
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {EUROPEAN_COUNTRIES.map(country => (
+                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Province */}
+              <Select 
+                value={filters.province || 'all'} 
+                onValueChange={handleProvinceChange}
+                disabled={!filters.country}
+              >
+                <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
+                  <SelectValue placeholder={filters.country ? 'Province' : 'Select Country'} />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-200 max-h-60">
+                  <SelectItem value="all">All Provinces</SelectItem>
+                  {provinces.map(province => (
+                    <SelectItem key={province} value={province}>{province}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* City */}
+              <Select 
+                value={filters.city || 'all'} 
+                onValueChange={handleCityChange}
+                disabled={!filters.province}
+              >
+                <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
+                  <SelectValue placeholder={filters.province ? 'City' : 'Select Province'} />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-200 max-h-60">
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {cities.map(city => (
                     <SelectItem key={city} value={city}>{city}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
+              {/* Customer Type */}
               <Select
                 value={filters.customerType}
                 onValueChange={(value) => setFilters(prev => ({ 
@@ -180,7 +253,8 @@ const Index = () => {
               
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500">
-                  Clear Filters
+                  <X className="h-4 w-4 mr-1" />
+                  Clear
                 </Button>
               )}
             </div>

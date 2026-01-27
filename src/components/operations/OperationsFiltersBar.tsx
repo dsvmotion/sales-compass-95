@@ -8,36 +8,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlacesAutocomplete } from '@/components/ui/places-autocomplete';
 import { OperationsFilters } from '@/types/operations';
-
-// European country codes for Google Places restrictions
-const EUROPEAN_COUNTRY_CODES: Record<string, string> = {
-  'Albania': 'al', 'Andorra': 'ad', 'Austria': 'at', 'Belarus': 'by', 'Belgium': 'be',
-  'Bosnia and Herzegovina': 'ba', 'Bulgaria': 'bg', 'Croatia': 'hr', 'Cyprus': 'cy',
-  'Czech Republic': 'cz', 'Denmark': 'dk', 'Estonia': 'ee', 'Finland': 'fi', 'France': 'fr',
-  'Germany': 'de', 'Greece': 'gr', 'Hungary': 'hu', 'Iceland': 'is', 'Ireland': 'ie',
-  'Italy': 'it', 'Kosovo': 'xk', 'Latvia': 'lv', 'Liechtenstein': 'li', 'Lithuania': 'lt',
-  'Luxembourg': 'lu', 'Malta': 'mt', 'Moldova': 'md', 'Monaco': 'mc', 'Montenegro': 'me',
-  'Morocco': 'ma', 'Netherlands': 'nl', 'North Macedonia': 'mk', 'Norway': 'no', 'Poland': 'pl',
-  'Portugal': 'pt', 'Romania': 'ro', 'Russia': 'ru', 'San Marino': 'sm', 'Serbia': 'rs',
-  'Slovakia': 'sk', 'Slovenia': 'si', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
-  'Turkey': 'tr', 'Ukraine': 'ua', 'United Kingdom': 'gb', 'Vatican City': 'va',
-};
-
-// Full list of European countries
-const EUROPEAN_COUNTRIES = Object.keys(EUROPEAN_COUNTRY_CODES).sort();
+import { EUROPEAN_COUNTRIES } from '@/hooks/useGeographyOptions';
 
 interface OperationsFiltersBarProps {
   filters: OperationsFilters;
   onFiltersChange: (filters: OperationsFilters) => void;
   onClearFilters: () => void;
+  provinces: string[];
+  cities: string[];
 }
 
 export function OperationsFiltersBar({
   filters,
   onFiltersChange,
   onClearFilters,
+  provinces,
+  cities,
 }: OperationsFiltersBarProps) {
   const hasActiveFilters =
     filters.search !== '' ||
@@ -46,9 +33,6 @@ export function OperationsFiltersBar({
     filters.city !== '' ||
     filters.commercialStatus !== 'all' ||
     filters.paymentStatus !== 'all';
-
-  // Get country code for Google Places restriction
-  const countryCode = filters.country ? EUROPEAN_COUNTRY_CODES[filters.country] : undefined;
 
   return (
     <div className="px-6 py-3 border-b border-gray-200 bg-white flex items-center gap-3 flex-wrap">
@@ -69,8 +53,8 @@ export function OperationsFiltersBar({
         onValueChange={(value) => onFiltersChange({ 
           ...filters, 
           country: value === 'all' ? '' : value,
-          province: '', // Reset province when country changes
-          city: '' // Reset city when country changes
+          province: '',
+          city: ''
         })}
       >
         <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
@@ -86,33 +70,47 @@ export function OperationsFiltersBar({
         </SelectContent>
       </Select>
 
-      {/* Province - Google Places Autocomplete */}
-      <div className="w-48">
-        <PlacesAutocomplete
-          value={filters.province}
-          onChange={(value) => onFiltersChange({ 
-            ...filters, 
-            province: value,
-            city: '' // Reset city when province changes
-          })}
-          placeholder={filters.country ? 'Province...' : 'Select country'}
-          types={['administrative_area_level_1']}
-          componentRestrictions={countryCode ? { country: countryCode } : undefined}
-          disabled={!filters.country}
-        />
-      </div>
+      {/* Province */}
+      <Select
+        value={filters.province || 'all'}
+        onValueChange={(value) => onFiltersChange({ 
+          ...filters, 
+          province: value === 'all' ? '' : value,
+          city: ''
+        })}
+        disabled={!filters.country}
+      >
+        <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
+          <SelectValue placeholder={filters.country ? 'Province' : 'Select Country'} />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 max-h-60">
+          <SelectItem value="all">All Provinces</SelectItem>
+          {provinces.map((province) => (
+            <SelectItem key={province} value={province}>
+              {province}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      {/* City - Google Places Autocomplete */}
-      <div className="w-48">
-        <PlacesAutocomplete
-          value={filters.city}
-          onChange={(value) => onFiltersChange({ ...filters, city: value })}
-          placeholder={filters.country ? 'City...' : 'Select country'}
-          types={['locality', 'sublocality']}
-          componentRestrictions={countryCode ? { country: countryCode } : undefined}
-          disabled={!filters.country}
-        />
-      </div>
+      {/* City */}
+      <Select
+        value={filters.city || 'all'}
+        onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
+        disabled={!filters.province}
+      >
+        <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
+          <SelectValue placeholder={filters.province ? 'City' : 'Select Province'} />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 max-h-60">
+          <SelectItem value="all">All Cities</SelectItem>
+          {cities.map((city) => (
+            <SelectItem key={city} value={city}>
+              {city}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {/* Commercial Status */}
       <Select

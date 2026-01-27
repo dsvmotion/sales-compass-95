@@ -8,6 +8,7 @@ import { OperationsTable } from '@/components/operations/OperationsTable';
 import { OperationsFiltersBar } from '@/components/operations/OperationsFiltersBar';
 import { PharmacyOperationsDetail } from '@/components/operations/PharmacyOperationsDetail';
 import { useQueryClient } from '@tanstack/react-query';
+import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 
 const initialFilters: OperationsFilters = {
   search: '',
@@ -26,6 +27,9 @@ export default function PharmacyOperations() {
 
   const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders();
   const queryClient = useQueryClient();
+
+  // Geography options (hierarchical)
+  const { provinces, cities } = useGeographyOptions(filters.country, filters.province);
 
   // Filter and sort pharmacies
   const displayedPharmacies = useMemo(() => {
@@ -155,6 +159,8 @@ export default function PharmacyOperations() {
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onClearFilters={() => setFilters(initialFilters)}
+        provinces={provinces}
+        cities={cities}
       />
 
       {/* Main Content */}
