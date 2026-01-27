@@ -1,22 +1,34 @@
 import { useState, useMemo } from 'react';
-import { Building2, DollarSign, ShoppingBag, TrendingUp, User } from 'lucide-react';
+import { Building2, DollarSign, ShoppingBag, User, RefreshCw, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { SalesMap } from '@/components/SalesMap';
 import { StatCard } from '@/components/StatCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { SalesList } from '@/components/SalesList';
-import { mockSales, getStats, CustomerType } from '@/data/mockSales';
+import { mockSales, getStats, CustomerType, Sale } from '@/data/mockSales';
+import { useWooCommerceOrders } from '@/hooks/useWooCommerceOrders';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [activeFilter, setActiveFilter] = useState<CustomerType | 'all'>('all');
+  const [useLiveData, setUseLiveData] = useState(true);
+
+  const { data: wooData, isLoading, error, refetch } = useWooCommerceOrders(useLiveData);
+
+  const salesData: Sale[] = useMemo(() => {
+    if (useLiveData && wooData?.orders?.length) {
+      return wooData.orders;
+    }
+    return mockSales;
+  }, [useLiveData, wooData]);
 
   const filteredSales = useMemo(() => {
-    if (activeFilter === 'all') return mockSales;
-    return mockSales.filter(sale => sale.customerType === activeFilter);
-  }, [activeFilter]);
+    if (activeFilter === 'all') return salesData;
+    return salesData.filter(sale => sale.customerType === activeFilter);
+  }, [activeFilter, salesData]);
 
-  const stats = useMemo(() => getStats(mockSales), []);
+  const stats = useMemo(() => getStats(salesData), [salesData]);
   const filteredStats = useMemo(() => getStats(filteredSales), [filteredSales]);
 
   return (
@@ -113,11 +125,54 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Footer Notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            To connect your WooCommerce store, enable Cloud integration and add your API credentials.
-          </p>
+        {/* Data Source & Status */}
+        <div className="mt-6 glass-card p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Loading orders from WooCommerce...</span>
+                </div>
+              ) : error ? (
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm">Failed to load live data. Showing demo data.</span>
+                </div>
+              ) : useLiveData && wooData?.orders?.length ? (
+                <div className="flex items-center gap-2 text-primary">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm">
+                    Connected to moodly.com • {wooData.pagination.total} total orders
+                  </span>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Using demo data
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUseLiveData(!useLiveData)}
+              >
+                {useLiveData ? 'Use Demo Data' : 'Use Live Data'}
+              </Button>
+              {useLiveData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
