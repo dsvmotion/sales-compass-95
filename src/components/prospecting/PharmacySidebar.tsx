@@ -15,8 +15,6 @@ interface PharmacySidebarProps {
   onClearFilters: () => void;
   hasSearched: boolean;
   countries: string[];
-  provinces: string[];
-  cities: string[];
   isLoadingOptions: boolean;
   onSearch: () => void;
   isSearching: boolean;
@@ -33,8 +31,6 @@ export function PharmacySidebar({
   onClearFilters,
   hasSearched,
   countries,
-  provinces,
-  cities,
   isLoadingOptions,
   onSearch,
   isSearching,
@@ -95,8 +91,6 @@ export function PharmacySidebar({
           filters={filters}
           onFiltersChange={onFiltersChange}
           countries={countries}
-          cities={cities}
-          provinces={provinces}
           onClearFilters={onClearFilters}
           onSearch={onSearch}
           isSearching={isSearching}

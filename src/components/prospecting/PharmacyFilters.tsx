@@ -8,14 +8,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PlacesAutocomplete } from '@/components/ui/places-autocomplete';
 import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
+
+// European country codes for Google Places restrictions
+const EUROPEAN_COUNTRY_CODES: Record<string, string> = {
+  'Albania': 'al', 'Andorra': 'ad', 'Austria': 'at', 'Belarus': 'by', 'Belgium': 'be',
+  'Bosnia and Herzegovina': 'ba', 'Bulgaria': 'bg', 'Croatia': 'hr', 'Cyprus': 'cy',
+  'Czech Republic': 'cz', 'Denmark': 'dk', 'Estonia': 'ee', 'Finland': 'fi', 'France': 'fr',
+  'Germany': 'de', 'Greece': 'gr', 'Hungary': 'hu', 'Iceland': 'is', 'Ireland': 'ie',
+  'Italy': 'it', 'Kosovo': 'xk', 'Latvia': 'lv', 'Liechtenstein': 'li', 'Lithuania': 'lt',
+  'Luxembourg': 'lu', 'Malta': 'mt', 'Moldova': 'md', 'Monaco': 'mc', 'Montenegro': 'me',
+  'Morocco': 'ma', 'Netherlands': 'nl', 'North Macedonia': 'mk', 'Norway': 'no', 'Poland': 'pl',
+  'Portugal': 'pt', 'Romania': 'ro', 'Russia': 'ru', 'San Marino': 'sm', 'Serbia': 'rs',
+  'Slovakia': 'sk', 'Slovenia': 'si', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+  'Turkey': 'tr', 'Ukraine': 'ua', 'United Kingdom': 'gb', 'Vatican City': 'va',
+};
 
 interface PharmacyFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   countries: string[];
-  cities: string[];
-  provinces: string[];
   onClearFilters: () => void;
   onSearch: () => void;
   isSearching: boolean;
@@ -26,78 +39,68 @@ export function PharmacyFilters({
   filters,
   onFiltersChange,
   countries,
-  cities,
-  provinces,
   onClearFilters,
   onSearch,
   isSearching,
   isLoadingOptions,
 }: PharmacyFiltersProps) {
   const hasActiveGeoFilter = filters.country !== '' || filters.province !== '' || filters.city !== '';
+  
+  // Get country code for Google Places restriction
+  const countryCode = filters.country ? EUROPEAN_COUNTRY_CODES[filters.country] : undefined;
 
   return (
     <div className="space-y-3">
-      {/* Geographic Filters - Hierarchical */}
-      <div className="space-y-2">
-        {/* Country */}
-        <Select
-          value={filters.country || 'all'}
-          onValueChange={(value) => onFiltersChange({ ...filters, country: value === 'all' ? '' : value })}
-        >
-          <SelectTrigger className="bg-white border-gray-300 text-gray-900">
-            <SelectValue placeholder="Select Country" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-gray-200 z-50">
-            <SelectItem value="all">All Countries</SelectItem>
-            {countries.map((country) => (
-              <SelectItem key={country} value={country}>
-                {country}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Country - Full European list */}
+      <Select
+        value={filters.country || 'all'}
+        onValueChange={(value) => onFiltersChange({ 
+          ...filters, 
+          country: value === 'all' ? '' : value,
+          province: '', // Reset province when country changes
+          city: '' // Reset city when country changes
+        })}
+      >
+        <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+          <SelectValue placeholder="Select Country" />
+        </SelectTrigger>
+        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
+          <SelectItem value="all">All Countries</SelectItem>
+          {countries.map((country) => (
+            <SelectItem key={country} value={country}>
+              {country}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        {/* Province - only enabled when country is selected */}
-        <Select
-          value={filters.province || 'all'}
-          onValueChange={(value) => onFiltersChange({ ...filters, province: value === 'all' ? '' : value })}
-          disabled={!filters.country}
-        >
-          <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-            <SelectValue placeholder={filters.country ? 'Select Province' : 'Select Country first'} />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-gray-200 z-50">
-            <SelectItem value="all">All Provinces</SelectItem>
-            {provinces.map((province) => (
-              <SelectItem key={province} value={province}>
-                {province}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Province - Google Places Autocomplete */}
+      <PlacesAutocomplete
+        value={filters.province}
+        onChange={(value) => onFiltersChange({ 
+          ...filters, 
+          province: value,
+          city: '' // Reset city when province changes
+        })}
+        placeholder={filters.country ? 'Search province/region...' : 'Select country first'}
+        types={['administrative_area_level_1']}
+        componentRestrictions={countryCode ? { country: countryCode } : undefined}
+        disabled={!filters.country}
+        icon={<MapPin className="h-4 w-4" />}
+      />
 
-        {/* City - only enabled when province is selected */}
-        <Select
-          value={filters.city || 'all'}
-          onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
-          disabled={!filters.province}
-        >
-          <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
-            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-            <SelectValue placeholder={filters.province ? 'Select City' : 'Select Province first'} />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-gray-200 z-50">
-            <SelectItem value="all">All Cities</SelectItem>
-            {cities.map((city) => (
-              <SelectItem key={city} value={city}>
-                {city}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* City - Google Places Autocomplete */}
+      <PlacesAutocomplete
+        value={filters.city}
+        onChange={(value) => onFiltersChange({ ...filters, city: value })}
+        placeholder={filters.country ? 'Search city...' : 'Select country first'}
+        types={['locality', 'sublocality']}
+        componentRestrictions={countryCode ? { country: countryCode } : undefined}
+        disabled={!filters.country}
+        icon={<MapPin className="h-4 w-4" />}
+      />
 
-      {/* Search Button - REQUIRED to trigger search */}
+      {/* Search Button - Triggers pharmacy search */}
       <Button
         onClick={onSearch}
         disabled={!hasActiveGeoFilter || isSearching}
@@ -116,7 +119,7 @@ export function PharmacyFilters({
         )}
       </Button>
 
-      {/* Text search - only works on already loaded results */}
+      {/* Text search - Filter already loaded results */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
@@ -127,7 +130,7 @@ export function PharmacyFilters({
         />
       </div>
 
-      {/* Status filter - works on already loaded results */}
+      {/* Status filter - Filter already loaded results */}
       <Select
         value={filters.status}
         onValueChange={(value) => onFiltersChange({ ...filters, status: value as PharmacyStatus | 'all' })}

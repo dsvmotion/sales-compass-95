@@ -27,29 +27,6 @@ export default function PharmacyOperations() {
   const { data: pharmacies = [], isLoading } = usePharmaciesWithOrders();
   const queryClient = useQueryClient();
 
-  // Extract unique filter options from data
-  const filterOptions = useMemo(() => {
-    const countries = [...new Set(pharmacies.map(p => p.country).filter(Boolean))] as string[];
-    
-    const provincesSource = filters.country
-      ? pharmacies.filter(p => p.country === filters.country)
-      : pharmacies;
-    const provinces = [...new Set(provincesSource.map(p => p.province).filter(Boolean))] as string[];
-
-    const citiesSource = filters.province
-      ? pharmacies.filter(p => p.province === filters.province)
-      : filters.country
-        ? pharmacies.filter(p => p.country === filters.country)
-        : pharmacies;
-    const cities = [...new Set(citiesSource.map(p => p.city).filter(Boolean))] as string[];
-
-    return {
-      countries: countries.sort((a, b) => a.localeCompare(b)),
-      provinces: provinces.sort((a, b) => a.localeCompare(b)),
-      cities: cities.sort((a, b) => a.localeCompare(b)),
-    };
-  }, [pharmacies, filters.country, filters.province]);
-
   // Filter and sort pharmacies
   const displayedPharmacies = useMemo(() => {
     let result = pharmacies.filter(pharmacy => {
@@ -63,10 +40,10 @@ export default function PharmacyOperations() {
         if (!matchesSearch) return false;
       }
 
-      // Geographic filters
+      // Geographic filters - use partial match for Google autocomplete values
       if (filters.country && pharmacy.country !== filters.country) return false;
-      if (filters.province && pharmacy.province !== filters.province) return false;
-      if (filters.city && pharmacy.city !== filters.city) return false;
+      if (filters.province && !pharmacy.province?.toLowerCase().includes(filters.province.toLowerCase())) return false;
+      if (filters.city && !pharmacy.city?.toLowerCase().includes(filters.city.toLowerCase())) return false;
 
       // Commercial status
       if (filters.commercialStatus !== 'all' && pharmacy.commercialStatus !== filters.commercialStatus) return false;
@@ -178,7 +155,6 @@ export default function PharmacyOperations() {
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onClearFilters={() => setFilters(initialFilters)}
-        filterOptions={filterOptions}
       />
 
       {/* Main Content */}
