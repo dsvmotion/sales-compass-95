@@ -134,7 +134,7 @@ export const SalesMap = forwardRef<google.maps.Map | null, SalesMapProps>(functi
 
   // Monochrome marker colors for light mode
   const getMarkerIcon = useCallback((type: 'pharmacy' | 'client') => {
-    const color = type === 'pharmacy' ? '#374151' : '#9ca3af'; // gray-700 / gray-400
+    const color = type === 'pharmacy' ? '#1f2937' : '#9ca3af'; // gray-800 / gray-400
     return {
       path: google.maps.SymbolPath.CIRCLE,
       fillColor: color,
