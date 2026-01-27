@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   X, MapPin, Phone, Globe, Clock, Copy, Check, 
-  ExternalLink, Mail, FileText, Save
+  ExternalLink, Mail, FileText, Save, ShoppingCart, Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,7 @@ import {
 import { Pharmacy, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
 import { PharmacyStatusBadge } from './PharmacyStatusBadge';
 import { useUpdatePharmacy } from '@/hooks/usePharmacies';
+import { useOrdersByPharmacy } from '@/hooks/useWooCommerceOrders';
 import { toast } from 'sonner';
 
 interface PharmacyDetailPanelProps {
@@ -32,6 +33,9 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
   const [hasChanges, setHasChanges] = useState(false);
 
   const updatePharmacy = useUpdatePharmacy();
+  
+  // Get real WooCommerce orders for this pharmacy
+  const relatedOrders = useOrdersByPharmacy(pharmacy.name, pharmacy.city || null);
 
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
@@ -72,6 +76,12 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
     setHasChanges(true);
   };
 
+  // Calculate order stats from real WooCommerce data
+  const orderStats = {
+    totalOrders: relatedOrders.length,
+    totalRevenue: relatedOrders.reduce((sum, order) => sum + order.amount, 0),
+  };
+
   return (
     <div className="h-full flex flex-col bg-card border-l border-border">
       {/* Header */}
@@ -89,6 +99,59 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Order History from WooCommerce - Real Data Only */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Order History (WooCommerce)
+          </h3>
+          
+          {relatedOrders.length === 0 ? (
+            <div className="bg-secondary/50 rounded-lg p-4 text-center">
+              <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">No sales data</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                No WooCommerce orders found for this pharmacy
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-primary/10 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">{orderStats.totalOrders}</p>
+                  <p className="text-xs text-muted-foreground">Total Orders</p>
+                </div>
+                <div className="bg-primary/10 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-primary">€{orderStats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Total Revenue</p>
+                </div>
+              </div>
+              
+              <div className="space-y-1 mt-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Recent Orders:</p>
+                {relatedOrders.slice(0, 5).map((order) => (
+                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{order.orderId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">
+                      €{order.amount.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+                {relatedOrders.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center pt-2">
+                    +{relatedOrders.length - 5} more orders
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Location Info */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Location</h3>

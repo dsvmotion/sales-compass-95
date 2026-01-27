@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { SalesMap } from '@/components/SalesMap';
 import { StatCard } from '@/components/StatCard';
 import { useWooCommerceOrders } from '@/hooks/useWooCommerceOrders';
-import { Sale } from '@/data/mockSales';
+import { Sale } from '@/types/sale';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
