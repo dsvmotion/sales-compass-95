@@ -132,20 +132,30 @@ serve(async (req) => {
 
     if (action === 'textSearch') {
       // Text search for pharmacies in a specific area
-      const { query } = await req.json();
+      // Query is passed in the initial JSON payload, not re-parsed
+      const query = (await req.clone().json()).query;
       
-      let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&type=pharmacy&key=${GOOGLE_MAPS_API_KEY}`;
-      
+      if (!query && !pageToken) {
+        throw new Error('query is required for textSearch action');
+      }
+
+      let url: string;
       if (pageToken) {
         url = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${pageToken}&key=${GOOGLE_MAPS_API_KEY}`;
+      } else {
+        url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&type=pharmacy&key=${GOOGLE_MAPS_API_KEY}`;
       }
+
+      console.log('Text search URL:', url.replace(GOOGLE_MAPS_API_KEY, 'REDACTED'));
 
       const response = await fetch(url);
       const data = await response.json();
 
+      console.log('Text search response status:', data.status, 'results:', data.results?.length || 0);
+
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
         console.error('Google Places Text Search API error:', data);
-        throw new Error(`Google Places API error: ${data.status}`);
+        throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`);
       }
 
       const pharmacies = (data.results || []).map((place: PlaceResult) => ({
