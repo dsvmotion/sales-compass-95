@@ -7,7 +7,7 @@ import { Sale } from '@/types/sale';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { EUROPEAN_COUNTRIES } from '@/hooks/useGeographyOptions';
+import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 
 const Index = () => {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -21,26 +21,8 @@ const Index = () => {
 
   const { data: sales = [], isLoading, error, refetch } = useWooCommerceOrders();
 
-  // Derive provinces and cities from sales data with hierarchy
-  const provinces = useMemo(() => {
-    if (!filters.country) return [];
-    const provincesSet = new Set(
-      sales
-        .filter(s => s.country === filters.country && s.province)
-        .map(s => s.province)
-    );
-    return [...provincesSet].sort();
-  }, [sales, filters.country]);
-
-  const cities = useMemo(() => {
-    if (!filters.province) return [];
-    const citiesSet = new Set(
-      sales
-        .filter(s => s.province === filters.province && s.city)
-        .map(s => s.city)
-    );
-    return [...citiesSet].sort();
-  }, [sales, filters.province]);
+  // Geography options from unified normalized tables
+  const { countries, provinces, cities } = useGeographyOptions(filters.country, filters.province);
 
   const filteredSales = useMemo(() => {
     return sales.filter(sale => {
@@ -186,29 +168,29 @@ const Index = () => {
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium text-gray-500">Filters:</span>
               
-              {/* Country */}
+              {/* Country - From normalized geography tables */}
               <Select value={filters.country || 'all'} onValueChange={handleCountryChange}>
                 <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="Country" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60">
+                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
                   <SelectItem value="all">All Countries</SelectItem>
-                  {EUROPEAN_COUNTRIES.map(country => (
+                  {countries.map(country => (
                     <SelectItem key={country} value={country}>{country}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              {/* Province */}
+              {/* Province - From normalized geography tables */}
               <Select 
                 value={filters.province || 'all'} 
                 onValueChange={handleProvinceChange}
                 disabled={!filters.country}
               >
                 <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-                  <SelectValue placeholder={filters.country ? 'Province' : 'Select Country'} />
+                  <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Province' : 'No provinces') : 'Select Country'} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60">
+                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
                   <SelectItem value="all">All Provinces</SelectItem>
                   {provinces.map(province => (
                     <SelectItem key={province} value={province}>{province}</SelectItem>
@@ -216,16 +198,16 @@ const Index = () => {
                 </SelectContent>
               </Select>
 
-              {/* City */}
+              {/* City - From normalized geography tables */}
               <Select 
                 value={filters.city || 'all'} 
                 onValueChange={handleCityChange}
                 disabled={!filters.province}
               >
                 <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
-                  <SelectValue placeholder={filters.province ? 'City' : 'Select Province'} />
+                  <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'City' : 'No cities') : 'Select Province'} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60">
+                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
                   <SelectItem value="all">All Cities</SelectItem>
                   {cities.map(city => (
                     <SelectItem key={city} value={city}>{city}</SelectItem>
@@ -244,7 +226,7 @@ const Index = () => {
                 <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200">
+                <SelectContent className="bg-white border-gray-200 z-50">
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="pharmacy">Pharmacies</SelectItem>
                   <SelectItem value="client">Clients</SelectItem>
@@ -410,9 +392,9 @@ const Index = () => {
               size="sm"
               onClick={() => refetch()}
               disabled={isLoading}
-              className="border-gray-300"
+              className="border-gray-300 text-gray-600"
             >
-              <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>

@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      geography_cities: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          name_local: string | null
+          population: number | null
+          province_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          name_local?: string | null
+          population?: number | null
+          province_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          name_local?: string | null
+          population?: number | null
+          province_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geography_cities_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
+            referencedRelation: "geography_provinces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geography_countries: {
+        Row: {
+          code: string
+          created_at: string
+          name: string
+          name_local: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          name: string
+          name_local?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          name?: string
+          name_local?: string | null
+        }
+        Relationships: []
+      }
+      geography_provinces: {
+        Row: {
+          code: string | null
+          country_code: string
+          created_at: string
+          id: string
+          name: string
+          name_local: string | null
+        }
+        Insert: {
+          code?: string | null
+          country_code: string
+          created_at?: string
+          id?: string
+          name: string
+          name_local?: string | null
+        }
+        Update: {
+          code?: string | null
+          country_code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          name_local?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geography_provinces_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "geography_countries"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       pharmacies: {
         Row: {
           address: string | null

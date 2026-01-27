@@ -37,7 +37,7 @@ export function PharmacyFilters({
 
   return (
     <div className="space-y-3">
-      {/* Country - Full European list */}
+      {/* Country - From normalized geography tables */}
       <Select
         value={filters.country || 'all'}
         onValueChange={(value) => onFiltersChange({ 
@@ -60,7 +60,7 @@ export function PharmacyFilters({
         </SelectContent>
       </Select>
 
-      {/* Province - Dropdown from database */}
+      {/* Province - From normalized geography tables */}
       <Select
         value={filters.province || 'all'}
         onValueChange={(value) => onFiltersChange({ 
@@ -71,7 +71,7 @@ export function PharmacyFilters({
         disabled={!filters.country}
       >
         <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-          <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Select Province' : 'No provinces found') : 'Select Country first'} />
+          <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Select Province' : 'No provinces available') : 'Select Country first'} />
         </SelectTrigger>
         <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
           <SelectItem value="all">All Provinces</SelectItem>
@@ -83,7 +83,7 @@ export function PharmacyFilters({
         </SelectContent>
       </Select>
 
-      {/* City - Dropdown from database */}
+      {/* City - From normalized geography tables */}
       <Select
         value={filters.city || 'all'}
         onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
@@ -91,7 +91,7 @@ export function PharmacyFilters({
       >
         <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
           <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-          <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'Select City' : 'No cities found') : 'Select Province first'} />
+          <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'Select City' : 'No cities available') : 'Select Province first'} />
         </SelectTrigger>
         <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
           <SelectItem value="all">All Cities</SelectItem>
