@@ -160,11 +160,13 @@ export function useSearchGooglePlaces() {
     mutationFn: async ({ 
       location, 
       radius, 
-      pageToken 
+      pageToken,
+      signal,
     }: { 
       location: { lat: number; lng: number }; 
       radius?: number;
       pageToken?: string;
+      signal?: AbortSignal;
     }) => {
       console.log('Searching Google Places for pharmacies at:', location);
       
@@ -175,6 +177,7 @@ export function useSearchGooglePlaces() {
           'Authorization': `Bearer ${SUPABASE_KEY}`,
           'apikey': SUPABASE_KEY,
         },
+        signal,
         body: JSON.stringify({
           action: 'search',
           location,

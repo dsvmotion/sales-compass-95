@@ -107,10 +107,15 @@ serve(async (req) => {
         google_place_id: place.place_id,
         name: place.name,
         address: place.formatted_address || '',
-        city: extractAddressComponent(addressComponents, 'locality') || 
-              extractAddressComponent(addressComponents, 'administrative_area_level_4'),
-        province: extractAddressComponent(addressComponents, 'administrative_area_level_2') ||
-                  extractAddressComponent(addressComponents, 'administrative_area_level_1'),
+        // Normalize geo hierarchy to avoid random sublocalities in filters
+        // city: locality (or postal_town where applicable)
+        city:
+          extractAddressComponent(addressComponents, 'locality') ||
+          extractAddressComponent(addressComponents, 'postal_town'),
+        // province/region: prefer admin_level_2; fallback to admin_level_1
+        province:
+          extractAddressComponent(addressComponents, 'administrative_area_level_2') ||
+          extractAddressComponent(addressComponents, 'administrative_area_level_1'),
         country: extractAddressComponent(addressComponents, 'country'),
         phone: place.formatted_phone_number || place.international_phone_number || null,
         website: place.website || null,

@@ -10,6 +10,7 @@ interface ProspectingMapProps {
   onMapReady?: (map: google.maps.Map) => void;
   onBoundsChanged?: (bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => void;
   center?: { lat: number; lng: number };
+  markerIconUrl?: string;
 }
 
 // Debounce utility
@@ -41,26 +42,40 @@ export function ProspectingMap({
   onMapReady,
   onBoundsChanged,
   center = { lat: 40.4168, lng: -3.7038 }, // Madrid
+  markerIconUrl,
 }: ProspectingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const markersByIdRef = useRef<Map<string, google.maps.Marker>>(new Map());
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
-  const isUserInteracting = useRef(false);
   const debouncedBoundsChanged = useRef<ReturnType<typeof debounce> | null>(null);
 
-  const getMarkerIcon = useCallback((pharmacy: Pharmacy, isSelected: boolean) => {
-    const color = STATUS_COLORS[pharmacy.commercial_status].pin;
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      fillColor: color,
-      fillOpacity: 1,
-      strokeColor: isSelected ? '#ffffff' : '#ffffff',
-      strokeWeight: isSelected ? 3 : 2,
-      scale: isSelected ? 12 : 9,
-    };
-  }, []);
+  const getMarkerIcon = useCallback(
+    (pharmacy: Pharmacy, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
+      // Prefer custom icon when provided
+      if (markerIconUrl) {
+        const size = isSelected ? 44 : 36;
+        return {
+          url: markerIconUrl,
+          scaledSize: new google.maps.Size(size, size),
+          anchor: new google.maps.Point(size / 2, size),
+        };
+      }
+
+      // Fallback (should be replaced by the provided icon)
+      const color = STATUS_COLORS[pharmacy.commercial_status].pin;
+      return {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: isSelected ? 3 : 2,
+        scale: isSelected ? 12 : 9,
+      };
+    },
+    [markerIconUrl]
+  );
 
   const initMap = useCallback(() => {
     if (!mapRef.current || typeof google === 'undefined') return;
@@ -107,25 +122,13 @@ export function ProspectingMap({
     mapInstanceRef.current = map;
     infoWindowRef.current = new google.maps.InfoWindow();
     setIsMapReady(true);
-    
-    // Track user interaction start
-    map.addListener('dragstart', () => {
-      isUserInteracting.current = true;
-    });
-    
-    map.addListener('zoom_changed', () => {
-      isUserInteracting.current = true;
-    });
-    
-    // Airbnb-style: Only trigger search when interaction ENDS (idle event)
-    // with proper debouncing to prevent rapid-fire calls
+
+    // Airbnb-style: trigger only when interaction ENDS (idle)
+    // Debounced to avoid rapid-fire calls and to keep UI calm.
     if (onBoundsChanged) {
       // Create debounced handler - 800ms delay after map becomes idle
       debouncedBoundsChanged.current = debounce((bounds: google.maps.LatLngBounds, center: google.maps.LatLng) => {
-        if (isUserInteracting.current) {
-          isUserInteracting.current = false;
-          onBoundsChanged(bounds, center);
-        }
+        onBoundsChanged(bounds, center);
       }, 800);
       
       map.addListener('idle', () => {
@@ -145,27 +148,43 @@ export function ProspectingMap({
   const updateMarkers = useCallback(() => {
     if (!mapInstanceRef.current || typeof google === 'undefined' || !isMapReady) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => {
-      marker.setMap(null);
-    });
-    markersRef.current = [];
+    const map = mapInstanceRef.current;
+    const nextIds = new Set(pharmacies.map((p) => p.id));
+    const markersById = markersByIdRef.current;
 
-    // Create new markers
+    // Remove markers that are no longer present (no full clear → avoids flicker)
+    for (const [id, marker] of markersById.entries()) {
+      if (!nextIds.has(id)) {
+        marker.setMap(null);
+        markersById.delete(id);
+      }
+    }
+
+    // Add/update markers
     pharmacies.forEach((pharmacy) => {
       const isSelected = pharmacy.id === selectedPharmacyId;
-      
+      const existing = markersById.get(pharmacy.id);
+      const icon = getMarkerIcon(pharmacy, isSelected);
+
+      if (existing) {
+        existing.setPosition({ lat: pharmacy.lat, lng: pharmacy.lng });
+        existing.setTitle(pharmacy.name);
+        existing.setIcon(icon);
+        existing.setZIndex(isSelected ? 999 : undefined);
+        return;
+      }
+
       const marker = new google.maps.Marker({
-        map: mapInstanceRef.current,
+        map,
         position: { lat: pharmacy.lat, lng: pharmacy.lng },
-        icon: getMarkerIcon(pharmacy, isSelected),
+        icon,
         title: pharmacy.name,
+        zIndex: isSelected ? 999 : undefined,
       });
 
       marker.addListener('click', () => {
         onSelectPharmacy(pharmacy);
-        
-        // Show info window
+
         if (infoWindowRef.current) {
           const statusColor = STATUS_COLORS[pharmacy.commercial_status];
           infoWindowRef.current.setContent(`
@@ -196,11 +215,11 @@ export function ProspectingMap({
               ${pharmacy.phone ? `<p style="font-size: 12px; color: #666;">📞 ${pharmacy.phone}</p>` : ''}
             </div>
           `);
-          infoWindowRef.current.open(mapInstanceRef.current, marker);
+          infoWindowRef.current.open(map, marker);
         }
       });
 
-      markersRef.current.push(marker);
+      markersById.set(pharmacy.id, marker);
     });
   }, [pharmacies, selectedPharmacyId, getMarkerIcon, onSelectPharmacy, isMapReady]);
 
@@ -241,15 +260,6 @@ export function ProspectingMap({
   useEffect(() => {
     updateMarkers();
   }, [updateMarkers]);
-
-  // Fit bounds to all pharmacies when they first load
-  useEffect(() => {
-    if (mapInstanceRef.current && pharmacies.length > 0 && isMapReady) {
-      const bounds = new google.maps.LatLngBounds();
-      pharmacies.forEach(p => bounds.extend({ lat: p.lat, lng: p.lng }));
-      mapInstanceRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }
-  }, [pharmacies.length, isMapReady]);
 
   // Pan to selected pharmacy
   useEffect(() => {
