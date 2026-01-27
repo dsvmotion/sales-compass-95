@@ -129,6 +129,7 @@ export type Database = {
           opening_hours: Json | null
           phone: string | null
           province: string | null
+          saved_at: string | null
           updated_at: string
           website: string | null
         }
@@ -149,6 +150,7 @@ export type Database = {
           opening_hours?: Json | null
           phone?: string | null
           province?: string | null
+          saved_at?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -169,6 +171,7 @@ export type Database = {
           opening_hours?: Json | null
           phone?: string | null
           province?: string | null
+          saved_at?: string | null
           updated_at?: string
           website?: string | null
         }
