@@ -219,6 +219,7 @@ export default function PharmacyOperations() {
                 <PharmacyOperationsDetail
                   pharmacy={selectedPharmacy}
                   onClose={() => setSelectedPharmacy(null)}
+                  onStatusUpdate={handleRefresh}
                 />
               </div>
             )}

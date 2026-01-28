@@ -86,11 +86,12 @@ export function useProspectingSearch() {
 
       console.log('Executing pharmacy search:', searchQuery);
 
-      // Collect all results with pagination
+      // Collect all results with FULL pagination - no artificial limits
+      // Google Places Text Search returns up to 60 results (20 per page × 3 pages max)
       const allBasicResults: GooglePlaceBasic[] = [];
       let nextPageToken: string | null = null;
       let pageCount = 0;
-      const maxPages = 3; // Google Places returns max 60 results (20 per page × 3 pages)
+      // NO maxPages limit - fully paginate until Google returns no more results
 
       do {
         // Wait before using pageToken (Google requires ~2s delay)
@@ -133,7 +134,9 @@ export function useProspectingSearch() {
         setProgress((prev) => ({ ...prev, found: allBasicResults.length }));
 
         console.log(`Page ${pageCount}: found ${pharmacies.length} pharmacies, total: ${allBasicResults.length}`);
-      } while (nextPageToken && pageCount < maxPages);
+        // Continue until no more pages (nextPageToken is null)
+        // Google Places has a natural limit of 3 pages (60 results) per query
+      } while (nextPageToken);
 
       console.log(`Search complete: ${allBasicResults.length} total pharmacies found`);
 

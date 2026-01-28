@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { 
   X, MapPin, Phone, Globe, Clock, Copy, Check, 
-  ExternalLink, Mail, FileText, Save, ShoppingCart, Package
+  ExternalLink, Mail, FileText, Save, ShoppingCart, Package,
+  Building2, ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Pharmacy, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
+import { Pharmacy, PharmacyStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/pharmacy';
 import { useUpdatePharmacy } from '@/hooks/usePharmacies';
+import { usePharmacyPhoto } from '@/hooks/usePharmacyPhoto';
 import { useOrdersByPharmacy } from '@/hooks/useWooCommerceOrders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -25,18 +27,9 @@ interface PharmacyDetailPanelProps {
   onClose: () => void;
 }
 
-function StatusBadge({ status }: { status: PharmacyStatus }) {
-  const styles = {
-    not_contacted: 'bg-gray-100 text-gray-600',
-    contacted: 'bg-gray-200 text-gray-700',
-    client: 'bg-gray-800 text-white',
-  };
-
-  return (
-    <span className={cn('px-2 py-0.5 rounded text-xs font-medium', styles[status])}>
-      {STATUS_LABELS[status]}
-    </span>
-  );
+interface PharmacyDetailPanelProps {
+  pharmacy: Pharmacy;
+  onClose: () => void;
 }
 
 export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelProps) {
@@ -47,9 +40,12 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
   const [hasChanges, setHasChanges] = useState(false);
 
   const updatePharmacy = useUpdatePharmacy();
+  const { photoUrl, isLoading: photoLoading } = usePharmacyPhoto(pharmacy.id);
   
   // Get real WooCommerce orders for this pharmacy
   const relatedOrders = useOrdersByPharmacy(pharmacy.name, pharmacy.city || null);
+
+  const statusColor = STATUS_COLORS[status];
 
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
@@ -98,17 +94,45 @@ export function PharmacyDetailPanel({ pharmacy, onClose }: PharmacyDetailPanelPr
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-lg leading-tight mb-2 truncate text-gray-900">
-            {pharmacy.name}
-          </h2>
-          <StatusBadge status={status} />
+      {/* Photo Header */}
+      <div className="border-b border-gray-200">
+        <div className="h-32 bg-gray-100 relative overflow-hidden">
+          {photoUrl ? (
+            <img 
+              src={photoUrl} 
+              alt={pharmacy.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              {photoLoading ? (
+                <div className="animate-pulse">
+                  <ImageIcon className="h-10 w-10 text-gray-300" />
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Building2 className="h-10 w-10 text-gray-300 mx-auto" />
+                  <p className="text-xs text-gray-400 mt-1">No photo</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500">
-          <X className="h-4 w-4" />
-        </Button>
+
+        {/* Title and Status */}
+        <div className="p-4 flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-lg leading-tight truncate text-gray-900">
+              {pharmacy.name}
+            </h2>
+            <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium mt-1', statusColor.bg, statusColor.text)}>
+              {STATUS_LABELS[status]}
+            </span>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-500 -mr-2">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
