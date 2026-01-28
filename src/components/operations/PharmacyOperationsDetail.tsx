@@ -13,44 +13,40 @@ import {
   ExternalLink,
   Package,
   CreditCard,
-  StickyNote
+  StickyNote,
+  Globe,
+  Save,
+  ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { PharmacyWithOrders, DetailedOrder } from '@/types/operations';
+import { PharmacyStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/pharmacy';
 import { 
   usePharmacyDocuments, 
   useUploadDocument, 
   useDeleteDocument, 
   useDownloadDocument 
 } from '@/hooks/usePharmacyOperations';
+import { useUpdatePharmacyStatus } from '@/hooks/usePharmacies';
+import { usePharmacyPhoto } from '@/hooks/usePharmacyPhoto';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface PharmacyOperationsDetailProps {
   pharmacy: PharmacyWithOrders;
   onClose: () => void;
-}
-
-function StatusBadge({ status }: { status: 'not_contacted' | 'contacted' | 'client' }) {
-  const styles = {
-    not_contacted: 'bg-yellow-100 text-yellow-800', // Yellow
-    contacted: 'bg-blue-100 text-blue-800', // Blue
-    client: 'bg-green-100 text-green-800', // Green
-  };
-
-  const labels = {
-    not_contacted: 'Not Contacted',
-    contacted: 'Contacted',
-    client: 'Client',
-  };
-
-  return (
-    <span className={cn('px-2 py-0.5 rounded text-xs font-medium', styles[status])}>
-      {labels[status]}
-    </span>
-  );
+  onStatusUpdate?: () => void;
 }
 
 function PaymentBadge({ status }: { status: 'paid' | 'pending' | 'failed' | 'refunded' }) {
@@ -292,25 +288,110 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
   );
 }
 
-export function PharmacyOperationsDetail({ pharmacy, onClose }: PharmacyOperationsDetailProps) {
+export function PharmacyOperationsDetail({ pharmacy, onClose, onStatusUpdate }: PharmacyOperationsDetailProps) {
+  const [status, setStatus] = useState<PharmacyStatus>(pharmacy.commercialStatus);
+  const [notes, setNotes] = useState(pharmacy.notes || '');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const updateStatus = useUpdatePharmacyStatus();
+  const { photoUrl, isLoading: photoLoading } = usePharmacyPhoto(pharmacy.id);
+
+  const handleStatusChange = (newStatus: PharmacyStatus) => {
+    setStatus(newStatus);
+    setHasChanges(true);
+  };
+
+  const handleNotesChange = (value: string) => {
+    setNotes(value);
+    setHasChanges(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateStatus.mutateAsync({
+        id: pharmacy.id,
+        updates: {
+          commercial_status: status,
+          notes: notes || null,
+        },
+      });
+      setHasChanges(false);
+      onStatusUpdate?.();
+      toast.success('Pharmacy updated');
+    } catch (error) {
+      toast.error('Failed to update pharmacy');
+    }
+  };
+
+  const statusColor = STATUS_COLORS[status];
+
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Building2 className="h-5 w-5 text-gray-600" />
-            <h2 className="font-semibold text-gray-900">{pharmacy.name}</h2>
-          </div>
-          <StatusBadge status={pharmacy.commercialStatus} />
+      {/* Header with Photo */}
+      <div className="border-b border-gray-200">
+        {/* Photo Section */}
+        <div className="h-32 bg-gray-100 relative overflow-hidden">
+          {photoUrl ? (
+            <img 
+              src={photoUrl} 
+              alt={pharmacy.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              {photoLoading ? (
+                <div className="animate-pulse">
+                  <ImageIcon className="h-10 w-10 text-gray-300" />
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Building2 className="h-10 w-10 text-gray-300 mx-auto" />
+                  <p className="text-xs text-gray-400 mt-1">No photo available</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-500">
-          <X className="h-4 w-4" />
-        </Button>
+
+        {/* Title and Status */}
+        <div className="p-4 flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-gray-900 truncate">{pharmacy.name}</h2>
+            <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium mt-1', statusColor.bg, statusColor.text)}>
+              {STATUS_LABELS[status]}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-500 -mr-2">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
+          {/* Commercial Status - EDITABLE */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Commercial Status</h3>
+            <Select value={status} onValueChange={handleStatusChange}>
+              <SelectTrigger className="bg-white border-gray-300">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200">
+                {(Object.keys(STATUS_LABELS) as PharmacyStatus[]).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    <div className="flex items-center gap-2">
+                      <span className={cn('w-2 h-2 rounded-full', STATUS_COLORS[s].bg.replace('bg-', 'bg-'))} 
+                        style={{ backgroundColor: STATUS_COLORS[s].pin }} />
+                      {STATUS_LABELS[s]}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
           {/* Contact Info */}
           <div className="space-y-2">
             <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</h3>
@@ -357,21 +438,22 @@ export function PharmacyOperationsDetail({ pharmacy, onClose }: PharmacyOperatio
 
           <Separator />
 
-          {/* Notes */}
-          {pharmacy.notes && (
-            <>
-              <div className="space-y-2">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                  <StickyNote className="h-3.5 w-3.5" />
-                  Notes
-                </h3>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                  {pharmacy.notes}
-                </p>
-              </div>
-              <Separator />
-            </>
-          )}
+          {/* Notes - EDITABLE */}
+          <div className="space-y-2">
+            <Label htmlFor="notes" className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <StickyNote className="h-3.5 w-3.5" />
+              Internal Notes
+            </Label>
+            <Textarea
+              id="notes"
+              placeholder="Add notes about this pharmacy..."
+              value={notes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              className="min-h-[80px] resize-none bg-white border-gray-300 text-sm"
+            />
+          </div>
+
+          <Separator />
 
           {/* Order History */}
           <div className="space-y-3">
@@ -394,6 +476,20 @@ export function PharmacyOperationsDetail({ pharmacy, onClose }: PharmacyOperatio
           </div>
         </div>
       </ScrollArea>
+
+      {/* Save Button */}
+      {hasChanges && (
+        <div className="p-4 border-t border-gray-200">
+          <Button
+            onClick={handleSave}
+            disabled={updateStatus.isPending}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateStatus.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

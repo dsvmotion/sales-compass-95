@@ -76,6 +76,36 @@ export function useUpdatePharmacy() {
   });
 }
 
+// Separate hook for updating status from Operations view
+export function useUpdatePharmacyStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      id, 
+      updates 
+    }: { 
+      id: string; 
+      updates: Partial<Pick<Pharmacy, 'commercial_status' | 'notes'>> 
+    }) => {
+      const { data, error } = await supabase
+        .from('pharmacies')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Pharmacy;
+    },
+    onSuccess: (data) => {
+      // Invalidate all pharmacy-related queries to ensure UI updates everywhere
+      queryClient.invalidateQueries({ queryKey: ['pharmacies'] });
+      queryClient.setQueryData(['pharmacy', data.id], data);
+    },
+  });
+}
+
 export function useCachePharmacy() {
   const queryClient = useQueryClient();
 

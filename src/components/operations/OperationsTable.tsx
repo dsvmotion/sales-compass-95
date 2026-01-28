@@ -1,6 +1,16 @@
-import { ArrowUpDown, ArrowUp, ArrowDown, FileText, Receipt, Check, X, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowUpDown, ArrowUp, ArrowDown, FileText, Receipt, Check, X, Loader2, Upload } from 'lucide-react';
 import { PharmacyWithOrders, SortField, SortDirection } from '@/types/operations';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useUploadDocument, usePharmacyDocuments } from '@/hooks/usePharmacyOperations';
+import { toast } from 'sonner';
 
 interface OperationsTableProps {
   pharmacies: PharmacyWithOrders[];
@@ -60,13 +70,142 @@ function PaymentBadge({ status }: { status: 'paid' | 'pending' | 'failed' | 'ref
   );
 }
 
-function DocIndicator({ has, type }: { has: boolean; type: 'invoice' | 'receipt' }) {
-  const Icon = type === 'invoice' ? FileText : Receipt;
+interface DocUploadCellProps {
+  pharmacy: PharmacyWithOrders;
+}
+
+function DocUploadCell({ pharmacy }: DocUploadCellProps) {
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const uploadDocument = useUploadDocument();
+  const { data: allDocuments = [] } = usePharmacyDocuments();
+
+  // Get the latest order for this pharmacy (if any)
+  const latestOrder = pharmacy.lastOrder;
+  const orderId = latestOrder?.orderId || null;
+
+  // Check docs for this pharmacy
+  const pharmacyDocs = allDocuments.filter(d => d.pharmacyId === pharmacy.id);
+  const hasInvoice = pharmacyDocs.some(d => d.documentType === 'invoice');
+  const hasReceipt = pharmacyDocs.some(d => d.documentType === 'receipt');
+
+  const handleUpload = async (file: File, type: 'invoice' | 'receipt', e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row selection
+    
+    if (!orderId) {
+      toast.error('No order linked to this pharmacy');
+      return;
+    }
+
+    try {
+      await uploadDocument.mutateAsync({
+        pharmacyId: pharmacy.id,
+        orderId,
+        documentType: type,
+        file,
+      });
+      toast.success(`${type === 'invoice' ? 'Invoice' : 'Receipt'} uploaded`);
+    } catch (error) {
+      toast.error(`Failed to upload ${type}`);
+    }
+  };
+
+  // No orders - can't upload documents
+  if (!orderId) {
+    return (
+      <div className="flex items-center justify-center gap-2 text-gray-300">
+        <FileText className="h-3.5 w-3.5" />
+        <Receipt className="h-3.5 w-3.5" />
+      </div>
+    );
+  }
+
   return (
-    <div className={cn('flex items-center gap-1', has ? 'text-gray-700' : 'text-gray-300')}>
-      <Icon className="h-3.5 w-3.5" />
-      {has ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-    </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {/* Invoice Button */}
+        <input
+          ref={invoiceInputRef}
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file, 'invoice', e as unknown as React.MouseEvent);
+          }}
+        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {hasInvoice ? (
+              <div className="p-1.5 text-green-600">
+                <FileText className="h-4 w-4" />
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  invoiceInputRef.current?.click();
+                }}
+                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                disabled={uploadDocument.isPending}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            )}
+          </TooltipTrigger>
+          <TooltipContent>
+            {hasInvoice ? 'Invoice uploaded' : 'Upload invoice (PDF)'}
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Receipt Button - only available if invoice is uploaded */}
+        <input
+          ref={receiptInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file, 'receipt', e as unknown as React.MouseEvent);
+          }}
+        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {hasReceipt ? (
+              <div className="p-1.5 text-green-600">
+                <Receipt className="h-4 w-4" />
+              </div>
+            ) : hasInvoice ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  receiptInputRef.current?.click();
+                }}
+                className="h-7 w-7 p-0 text-green-500 hover:text-green-600 hover:bg-green-50"
+                disabled={uploadDocument.isPending}
+              >
+                <Receipt className="h-4 w-4" />
+              </Button>
+            ) : (
+              <div className="p-1.5 text-gray-300">
+                <Receipt className="h-4 w-4" />
+              </div>
+            )}
+          </TooltipTrigger>
+          <TooltipContent>
+            {hasReceipt 
+              ? 'Receipt uploaded' 
+              : hasInvoice 
+                ? 'Upload receipt (PDF/Image)' 
+                : 'Upload invoice first'}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -210,10 +349,7 @@ export function OperationsTable({
                 <PaymentBadge status={pharmacy.lastOrder?.paymentStatus || null} />
               </td>
               <td className="px-4 py-3">
-                <div className="flex items-center justify-center gap-2">
-                  <DocIndicator has={pharmacy.hasInvoice} type="invoice" />
-                  <DocIndicator has={pharmacy.hasReceipt} type="receipt" />
-                </div>
+                <DocUploadCell pharmacy={pharmacy} />
               </td>
             </tr>
           ))}

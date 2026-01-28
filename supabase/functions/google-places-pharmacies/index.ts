@@ -22,6 +22,11 @@ interface PlaceResult {
     weekday_text?: string[];
     open_now?: boolean;
   };
+  photos?: Array<{
+    photo_reference: string;
+    height: number;
+    width: number;
+  }>;
   address_components?: Array<{
     long_name: string;
     short_name: string;
@@ -46,7 +51,7 @@ serve(async (req) => {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
     }
 
-    const { action, location, radius = 50000, pageToken, placeId, query } = await req.json();
+    const { action, location, radius = 50000, pageToken, placeId, query, photoReference, maxWidth = 400 } = await req.json();
 
     if (action === 'search') {
       // Search for pharmacies near a location
@@ -83,13 +88,26 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'photo') {
+      // Get photo URL for a place
+      if (!photoReference) {
+        throw new Error('photoReference is required for photo action');
+      }
+
+      const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_MAPS_API_KEY}`;
+
+      return new Response(JSON.stringify({ photoUrl }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'details') {
       // Get detailed information for a specific place
       if (!placeId) {
         throw new Error('placeId is required for details action');
       }
 
-      const fields = 'place_id,name,formatted_address,formatted_phone_number,international_phone_number,website,opening_hours,address_components,geometry';
+      const fields = 'place_id,name,formatted_address,formatted_phone_number,international_phone_number,website,opening_hours,address_components,geometry,photos';
       const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
 
       const response = await fetch(url);
