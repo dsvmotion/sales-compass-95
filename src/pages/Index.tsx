@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useGeographyOptions } from '@/hooks/useGeographyOptions';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 const Index = () => {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -111,6 +112,7 @@ const Index = () => {
                 Pharmacy Prospecting
               </Button>
             </Link>
+            <UserMenu />
           </div>
         </div>
 

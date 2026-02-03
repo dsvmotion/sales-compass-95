@@ -9,6 +9,7 @@ import { OperationsFiltersBar } from '@/components/operations/OperationsFiltersB
 import { PharmacyOperationsDetail } from '@/components/operations/PharmacyOperationsDetail';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGeographyOptions } from '@/hooks/useGeographyOptions';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 const initialFilters: OperationsFilters = {
   search: '',
@@ -165,6 +166,7 @@ export default function PharmacyOperations() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          <UserMenu />
         </div>
       </header>
 

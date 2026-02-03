@@ -9,6 +9,7 @@ import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 import { useProspectingSearch } from '@/hooks/useProspectingSearch';
 import { useSavePharmacies } from '@/hooks/useSavePharmacies';
 import { Pharmacy, PharmacyFilters as Filters } from '@/types/pharmacy';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 const initialFilters: Filters = {
   search: '',
@@ -167,6 +168,7 @@ export default function PharmacyProspecting() {
               Cancel Search
             </Button>
           )}
+          <UserMenu />
         </div>
       </header>
 
