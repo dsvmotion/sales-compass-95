@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface PlaceResult {
@@ -46,6 +47,32 @@ serve(async (req) => {
   }
 
   try {
+    // Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!GOOGLE_MAPS_API_KEY) {
       throw new Error('GOOGLE_MAPS_API_KEY is not configured');
@@ -67,8 +94,8 @@ serve(async (req) => {
       const data = await response.json();
 
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-        console.error('Google Places API error:', data);
-        throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`);
+        console.error('Google Places API error:', data.status);
+        throw new Error(`Google Places API error: ${data.status}`);
       }
 
       const pharmacies = (data.results || []).map((place: PlaceResult) => ({
@@ -114,7 +141,7 @@ serve(async (req) => {
       const data = await response.json();
 
       if (data.status !== 'OK') {
-        console.error('Google Places Details API error:', data);
+        console.error('Google Places Details API error:', data.status);
         throw new Error(`Google Places Details API error: ${data.status}`);
       }
 
@@ -161,16 +188,12 @@ serve(async (req) => {
         url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&type=pharmacy&key=${GOOGLE_MAPS_API_KEY}`;
       }
 
-      console.log('Text search URL:', url.replace(GOOGLE_MAPS_API_KEY, 'REDACTED'));
-
       const response = await fetch(url);
       const data = await response.json();
 
-      console.log('Text search response status:', data.status, 'results:', data.results?.length || 0);
-
       if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-        console.error('Google Places Text Search API error:', data);
-        throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`);
+        console.error('Google Places Text Search API error:', data.status);
+        throw new Error(`Google Places API error: ${data.status}`);
       }
 
       const pharmacies = (data.results || []).map((place: PlaceResult) => ({

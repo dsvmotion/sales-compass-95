@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface WooCommerceOrder {
@@ -142,6 +143,32 @@ serve(async (req) => {
   }
 
   try {
+    // Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const wooUrl = Deno.env.get('WOOCOMMERCE_URL');
     const consumerKey = Deno.env.get('WOOCOMMERCE_CONSUMER_KEY');
     const consumerSecret = Deno.env.get('WOOCOMMERCE_CONSUMER_SECRET');
@@ -163,20 +190,19 @@ serve(async (req) => {
     const baseUrl = wooUrl.endsWith('/') ? wooUrl.slice(0, -1) : wooUrl;
     const apiUrl = `${baseUrl}/wp-json/wc/v3/orders?per_page=${perPage}&page=${page}&status=${status}`;
     
-    const authHeader = 'Basic ' + btoa(`${consumerKey}:${consumerSecret}`);
+    const wooAuthHeader = 'Basic ' + btoa(`${consumerKey}:${consumerSecret}`);
     
     const wooResponse = await fetch(apiUrl, {
       headers: {
-        'Authorization': authHeader,
+        'Authorization': wooAuthHeader,
         'Content-Type': 'application/json'
       }
     });
 
     if (!wooResponse.ok) {
-      const errorText = await wooResponse.text();
-      console.error('WooCommerce API error:', errorText);
+      console.error('WooCommerce API error');
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch orders from WooCommerce', details: errorText }),
+        JSON.stringify({ error: 'Failed to fetch orders from WooCommerce' }),
         { status: wooResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -244,9 +270,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
