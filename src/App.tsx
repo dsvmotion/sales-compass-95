@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import PharmacyProspecting from "./pages/PharmacyProspecting";
 import PharmacyOperations from "./pages/PharmacyOperations";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,9 +38,24 @@ const App = () => (
                 <PharmacyProspecting />
               </ProtectedRoute>
             } />
+            <Route path="/prospecting/herbalists" element={
+              <ProtectedRoute>
+                <PharmacyProspecting clientType="herbalist" />
+              </ProtectedRoute>
+            } />
             <Route path="/operations" element={
               <ProtectedRoute>
                 <PharmacyOperations />
+              </ProtectedRoute>
+            } />
+            <Route path="/operations/herbalists" element={
+              <ProtectedRoute>
+                <PharmacyOperations clientType="herbalist" />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } />
             

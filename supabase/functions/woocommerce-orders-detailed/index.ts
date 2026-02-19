@@ -65,6 +65,8 @@ interface DetailedOrder {
   billingCity: string;
   billingProvince: string;
   billingCountry: string;
+  country: string;
+  province: string;
   shippingAddress: string;
   shippingCity: string;
   amount: number;
@@ -127,31 +129,9 @@ serve(async (req) => {
   }
 
   try {
-    // Verify JWT authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const wooUrl = Deno.env.get('WOOCOMMERCE_URL');
     const consumerKey = Deno.env.get('WOOCOMMERCE_CONSUMER_KEY');
@@ -208,6 +188,8 @@ serve(async (req) => {
         billingCity: order.billing.city || '',
         billingProvince: order.billing.state || '',
         billingCountry: order.billing.country || '',
+        country: order.billing.country || '',
+        province: order.billing.state || '',
         shippingAddress: [order.shipping.address_1, order.shipping.address_2].filter(Boolean).join(', '),
         shippingCity: order.shipping.city || '',
         amount: parseFloat(order.total) || 0,

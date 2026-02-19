@@ -1,16 +1,7 @@
-import { useRef, useState } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, FileText, Receipt, Check, X, Loader2, Upload } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, FileText, Loader2 } from 'lucide-react';
 import { PharmacyWithOrders, SortField, SortDirection } from '@/types/operations';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useUploadDocument, usePharmacyDocuments } from '@/hooks/usePharmacyOperations';
-import { toast } from 'sonner';
+import { usePharmacyDocuments } from '@/hooks/usePharmacyOperations';
 
 interface OperationsTableProps {
   pharmacies: PharmacyWithOrders[];
@@ -70,142 +61,24 @@ function PaymentBadge({ status }: { status: 'paid' | 'pending' | 'failed' | 'ref
   );
 }
 
-interface DocUploadCellProps {
+interface DocCountCellProps {
   pharmacy: PharmacyWithOrders;
 }
 
-function DocUploadCell({ pharmacy }: DocUploadCellProps) {
-  const invoiceInputRef = useRef<HTMLInputElement>(null);
-  const receiptInputRef = useRef<HTMLInputElement>(null);
-  const uploadDocument = useUploadDocument();
+function DocCountCell({ pharmacy }: DocCountCellProps) {
   const { data: allDocuments = [] } = usePharmacyDocuments();
-
-  // Get the latest order for this pharmacy (if any)
-  const latestOrder = pharmacy.lastOrder;
-  const orderId = latestOrder?.orderId || null;
-
-  // Check docs for this pharmacy
-  const pharmacyDocs = allDocuments.filter(d => d.pharmacyId === pharmacy.id);
-  const hasInvoice = pharmacyDocs.some(d => d.documentType === 'invoice');
-  const hasReceipt = pharmacyDocs.some(d => d.documentType === 'receipt');
-
-  const handleUpload = async (file: File, type: 'invoice' | 'receipt', e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent row selection
-    
-    if (!orderId) {
-      toast.error('No order linked to this pharmacy');
-      return;
-    }
-
-    try {
-      await uploadDocument.mutateAsync({
-        pharmacyId: pharmacy.id,
-        orderId,
-        documentType: type,
-        file,
-      });
-      toast.success(`${type === 'invoice' ? 'Invoice' : 'Receipt'} uploaded`);
-    } catch (error) {
-      toast.error(`Failed to upload ${type}`);
-    }
-  };
-
-  // No orders - can't upload documents
-  if (!orderId) {
-    return (
-      <div className="flex items-center justify-center gap-2 text-gray-300">
-        <FileText className="h-3.5 w-3.5" />
-        <Receipt className="h-3.5 w-3.5" />
-      </div>
-    );
-  }
+  const count = allDocuments.filter((d) => d.pharmacyId === pharmacy.id).length;
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-        {/* Invoice Button */}
-        <input
-          ref={invoiceInputRef}
-          type="file"
-          accept=".pdf"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleUpload(file, 'invoice', e as unknown as React.MouseEvent);
-          }}
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {hasInvoice ? (
-              <div className="p-1.5 text-green-600">
-                <FileText className="h-4 w-4" />
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  invoiceInputRef.current?.click();
-                }}
-                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                disabled={uploadDocument.isPending}
-              >
-                <FileText className="h-4 w-4" />
-              </Button>
-            )}
-          </TooltipTrigger>
-          <TooltipContent>
-            {hasInvoice ? 'Invoice uploaded' : 'Upload invoice (PDF)'}
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Receipt Button - only available if invoice is uploaded */}
-        <input
-          ref={receiptInputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleUpload(file, 'receipt', e as unknown as React.MouseEvent);
-          }}
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {hasReceipt ? (
-              <div className="p-1.5 text-green-600">
-                <Receipt className="h-4 w-4" />
-              </div>
-            ) : hasInvoice ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  receiptInputRef.current?.click();
-                }}
-                className="h-7 w-7 p-0 text-green-500 hover:text-green-600 hover:bg-green-50"
-                disabled={uploadDocument.isPending}
-              >
-                <Receipt className="h-4 w-4" />
-              </Button>
-            ) : (
-              <div className="p-1.5 text-gray-300">
-                <Receipt className="h-4 w-4" />
-              </div>
-            )}
-          </TooltipTrigger>
-          <TooltipContent>
-            {hasReceipt 
-              ? 'Receipt uploaded' 
-              : hasInvoice 
-                ? 'Upload receipt (PDF/Image)' 
-                : 'Upload invoice first'}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </TooltipProvider>
+    <div className="flex items-center justify-center">
+      {count > 0 ? (
+        <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800">
+          {count}
+        </span>
+      ) : (
+        <FileText className="h-4 w-4 text-gray-300" />
+      )}
+    </div>
   );
 }
 
@@ -238,7 +111,7 @@ export function OperationsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-[1600px]">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
             <th className="text-left px-4 py-3 font-medium text-gray-600">
@@ -246,12 +119,76 @@ export function OperationsTable({
                 onClick={() => onSort('name')} 
                 className="flex items-center gap-1 hover:text-gray-900"
               >
-                Pharmacy
+                Name
                 <SortIcon field="name" currentField={sortField} direction={sortDirection} />
               </button>
             </th>
-            <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('address')} className="flex items-center gap-1 hover:text-gray-900">
+                Address
+                <SortIcon field="address" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('postal_code')} className="flex items-center gap-1 hover:text-gray-900">
+                CP
+                <SortIcon field="postal_code" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('city')} className="flex items-center gap-1 hover:text-gray-900">
+                City
+                <SortIcon field="city" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('province')} className="flex items-center gap-1 hover:text-gray-900">
+                Province
+                <SortIcon field="province" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('autonomous_community')} className="flex items-center gap-1 hover:text-gray-900">
+                Autonomous Community
+                <SortIcon field="autonomous_community" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('phone')} className="flex items-center gap-1 hover:text-gray-900">
+                Phone
+                <SortIcon field="phone" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('secondary_phone')} className="flex items-center gap-1 hover:text-gray-900">
+                Tel. Adicional
+                <SortIcon field="secondary_phone" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('email')} className="flex items-center gap-1 hover:text-gray-900">
+                Email
+                <SortIcon field="email" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('activity')} className="flex items-center gap-1 hover:text-gray-900">
+                Activity
+                <SortIcon field="activity" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('subsector')} className="flex items-center gap-1 hover:text-gray-900">
+                Subsector
+                <SortIcon field="subsector" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">
+              <button onClick={() => onSort('legal_form')} className="flex items-center gap-1 hover:text-gray-900">
+                Legal Form
+                <SortIcon field="legal_form" currentField={sortField} direction={sortDirection} />
+              </button>
+            </th>
             <th className="text-left px-4 py-3 font-medium text-gray-600">
               <button 
                 onClick={() => onSort('commercialStatus')} 
@@ -304,26 +241,46 @@ export function OperationsTable({
               )}
             >
               <td className="px-4 py-3">
-                <div className="font-medium text-gray-900 truncate max-w-[200px]">
+                <div className="font-medium text-gray-900 truncate max-w-[180px]">
                   {pharmacy.name}
                 </div>
-                {pharmacy.address && (
-                  <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                    {pharmacy.address}
-                  </div>
-                )}
               </td>
               <td className="px-4 py-3">
-                <div className="text-gray-700">{pharmacy.city || '—'}</div>
-                <div className="text-xs text-gray-500">
-                  {[pharmacy.province, pharmacy.country].filter(Boolean).join(', ') || '—'}
+                <div className="text-xs text-gray-700 truncate max-w-[180px]">
+                  {pharmacy.address || '—'}
                 </div>
               </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.postal_code || '—'}
+              </td>
+              <td className="px-4 py-3 text-gray-700">
+                {pharmacy.city || '—'}
+              </td>
+              <td className="px-4 py-3 text-gray-700">
+                {pharmacy.province || '—'}
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.autonomous_community || '—'}
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.phone || '—'}
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.secondary_phone || '—'}
+              </td>
               <td className="px-4 py-3">
-                <div className="text-gray-700 text-xs">{pharmacy.phone || '—'}</div>
-                <div className="text-xs text-gray-500 truncate max-w-[150px]">
+                <div className="text-xs text-gray-700 truncate max-w-[150px]">
                   {pharmacy.email || '—'}
                 </div>
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.activity || '—'}
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.subsector || '—'}
+              </td>
+              <td className="px-4 py-3 text-xs text-gray-700">
+                {pharmacy.legal_form || '—'}
               </td>
               <td className="px-4 py-3">
                 <StatusBadge status={pharmacy.commercialStatus} />
@@ -349,7 +306,7 @@ export function OperationsTable({
                 <PaymentBadge status={pharmacy.lastOrder?.paymentStatus || null} />
               </td>
               <td className="px-4 py-3">
-                <DocUploadCell pharmacy={pharmacy} />
+                <DocCountCell pharmacy={pharmacy} />
               </td>
             </tr>
           ))}

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Pharmacy } from '@/types/pharmacy';
+import { Pharmacy, type ClientType } from '@/types/pharmacy';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
 
@@ -11,6 +11,7 @@ interface SearchFilters {
   country: string;
   province: string;
   city: string;
+  clientType?: ClientType;
 }
 
 interface GooglePlaceBasic {
@@ -82,7 +83,24 @@ export function useProspectingSearch() {
     try {
       // Build search query for Google Places
       const locationParts = [filters.city, filters.province, filters.country].filter(Boolean);
-      const searchQuery = `pharmacy in ${locationParts.join(', ')}`;
+      let searchTerm: string;
+      const country = filters.country?.toLowerCase() || '';
+      if (filters.clientType === 'herbalist') {
+        if (country === 'spain' || country === 'españa') searchTerm = 'herbolario';
+        else if (country === 'france' || country === 'francia') searchTerm = 'herboristerie';
+        else if (country === 'germany' || country === 'alemania') searchTerm = 'kräuterladen';
+        else if (country === 'italy' || country === 'italia') searchTerm = 'erboristeria';
+        else if (country === 'portugal') searchTerm = 'ervanária';
+        else searchTerm = 'herbalist';
+      } else {
+        if (country === 'spain' || country === 'españa') searchTerm = 'farmacia';
+        else if (country === 'france' || country === 'francia') searchTerm = 'pharmacie';
+        else if (country === 'germany' || country === 'alemania') searchTerm = 'apotheke';
+        else if (country === 'italy' || country === 'italia') searchTerm = 'farmacia';
+        else if (country === 'portugal') searchTerm = 'farmácia';
+        else searchTerm = 'pharmacy';
+      }
+      const searchQuery = `${searchTerm} in ${locationParts.join(', ')}`;
 
       console.log('Executing pharmacy search:', searchQuery);
 
@@ -195,41 +213,96 @@ export function useProspectingSearch() {
           const detailsData = await detailsResponse.json();
           const details: GooglePlaceDetails = detailsData.pharmacy;
 
-          // Insert into database
-          const { data: inserted, error: insertError } = await supabase
+          // Insert into database - first check for existing CSV import by name+city
+          // Check if already exists by google_place_id
+          const { data: existingByPlaceId } = await supabase
             .from('pharmacies')
-            .insert([
-              {
-                google_place_id: details.google_place_id,
-                name: details.name,
-                address: details.address,
-                city: details.city,
-                province: details.province,
-                country: details.country,
-                phone: details.phone,
-                website: details.website,
-                opening_hours: details.opening_hours as Json,
-                lat: details.lat,
-                lng: details.lng,
-                google_data: details.google_data ? (JSON.parse(JSON.stringify(details.google_data)) as Json) : null,
-              },
-            ])
-            .select()
-            .single();
+            .select('*')
+            .eq('google_place_id', details.google_place_id)
+            .maybeSingle();
 
-          if (insertError) {
-            // Might be a race condition - try to fetch again
-            const { data: refetched } = await supabase
+          if (existingByPlaceId) {
+            cachedPharmacies.push(existingByPlaceId as Pharmacy);
+            setProgress((prev) => ({ ...prev, cached: cachedPharmacies.length }));
+            setResults([...cachedPharmacies]);
+            continue;
+          }
+
+          // Check if exists by similar name + same city (CSV imports without google_place_id)
+          let existingByName = null;
+          if (details.city) {
+            const { data: nameMatches } = await supabase
               .from('pharmacies')
               .select('*')
-              .eq('google_place_id', basic.google_place_id)
-              .maybeSingle();
+              .is('google_place_id', null)
+              .ilike('city', details.city)
+              .ilike('name', `%${details.name.split(' ').slice(0, 3).join('%')}%`)
+              .limit(1);
 
-            if (refetched) {
-              cachedPharmacies.push(refetched as Pharmacy);
+            if (nameMatches && nameMatches.length > 0) {
+              existingByName = nameMatches[0];
             }
-          } else if (inserted) {
-            cachedPharmacies.push(inserted as Pharmacy);
+          }
+
+          if (existingByName) {
+            // Merge: update CSV record with Google data
+            const { data: updated, error: updateError } = await supabase
+              .from('pharmacies')
+              .update({
+                google_place_id: details.google_place_id,
+                phone: details.phone || existingByName.phone,
+                website: details.website || existingByName.website,
+                opening_hours: details.opening_hours as Json,
+                lat: details.lat || existingByName.lat,
+                lng: details.lng || existingByName.lng,
+                google_data: details.google_data ? (JSON.parse(JSON.stringify(details.google_data)) as Json) : null,
+                address: details.address || existingByName.address,
+              })
+              .eq('id', existingByName.id)
+              .select()
+              .single();
+
+            if (updated) {
+              cachedPharmacies.push(updated as Pharmacy);
+            } else {
+              cachedPharmacies.push(existingByName as Pharmacy);
+            }
+          } else {
+            // No match found - insert new
+            const { data: inserted, error: insertError } = await supabase
+              .from('pharmacies')
+              .insert([
+                {
+                  google_place_id: details.google_place_id,
+                  name: details.name,
+                  address: details.address,
+                  city: details.city,
+                  province: details.province,
+                  country: details.country,
+                  phone: details.phone,
+                  website: details.website,
+                  opening_hours: details.opening_hours as Json,
+                  lat: details.lat,
+                  lng: details.lng,
+                  google_data: details.google_data ? (JSON.parse(JSON.stringify(details.google_data)) as Json) : null,
+                  client_type: filters.clientType || 'pharmacy',
+                },
+              ])
+              .select()
+              .single();
+
+            if (insertError) {
+              const { data: refetched } = await supabase
+                .from('pharmacies')
+                .select('*')
+                .eq('google_place_id', basic.google_place_id)
+                .maybeSingle();
+              if (refetched) {
+                cachedPharmacies.push(refetched as Pharmacy);
+              }
+            } else if (inserted) {
+              cachedPharmacies.push(inserted as Pharmacy);
+            }
           }
 
           setProgress((prev) => ({ ...prev, cached: cachedPharmacies.length }));

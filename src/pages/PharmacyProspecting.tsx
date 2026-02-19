@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, XCircle, Building2 } from 'lucide-react';
+import { ArrowLeft, XCircle, Building2, Leaf } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PharmacySidebar } from '@/components/prospecting/PharmacySidebar';
@@ -8,8 +8,12 @@ import { PharmacyDetailPanel } from '@/components/prospecting/PharmacyDetailPane
 import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 import { useProspectingSearch } from '@/hooks/useProspectingSearch';
 import { useSavePharmacies } from '@/hooks/useSavePharmacies';
-import { Pharmacy, PharmacyFilters as Filters } from '@/types/pharmacy';
+import { Pharmacy, PharmacyFilters as Filters, type ClientType } from '@/types/pharmacy';
 import { UserMenu } from '@/components/auth/UserMenu';
+
+interface Props {
+  clientType?: ClientType;
+}
 
 const initialFilters: Filters = {
   search: '',
@@ -19,10 +23,20 @@ const initialFilters: Filters = {
   status: 'all',
 };
 
-export default function PharmacyProspecting() {
+export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) {
+  const labels = useMemo(() => ({
+    singular: clientType === 'herbalist' ? 'herbalist' : 'pharmacy',
+    plural: clientType === 'herbalist' ? 'herbalists' : 'pharmacies',
+    sidebarTitle: clientType === 'herbalist' ? 'Herbalists' : 'Pharmacies',
+    searchButton: clientType === 'herbalist' ? 'Search Herbalists' : 'Search Pharmacies',
+    noFound: clientType === 'herbalist' ? 'No herbalists found' : 'No pharmacies found',
+    foundCount: (n: number) => clientType === 'herbalist' ? `Found ${n} herbalists` : `Found ${n} pharmacies`,
+  }), [clientType]);
+
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   // Geography options from unified normalized tables
   const { countries, provinces, cities, isLoading: isLoadingOptions } = useGeographyOptions(
@@ -101,8 +115,9 @@ export default function PharmacyProspecting() {
       country: filters.country,
       province: filters.province,
       city: filters.city,
+      clientType,
     });
-  }, [executeSearch, filters.country, filters.province, filters.city]);
+  }, [executeSearch, filters.country, filters.province, filters.city, clientType]);
 
   const handleCancelSearch = useCallback(() => {
     cancelSearch();
@@ -134,9 +149,21 @@ export default function PharmacyProspecting() {
     savePharmacies.mutate(ids, {
       onSuccess: () => {
         setSelectedIds(new Set());
+        setSavedIds((prev) => new Set([...prev, ...ids]));
       },
     });
   }, [selectedIds, savePharmacies]);
+
+  const handleSaveOne = useCallback(
+    (id: string) => {
+      savePharmacies.mutate([id], {
+        onSuccess: () => {
+          setSavedIds((prev) => new Set(prev).add(id));
+        },
+      });
+    },
+    [savePharmacies]
+  );
 
   return (
     <div className="h-screen flex flex-col bg-white text-gray-900">
@@ -151,12 +178,18 @@ export default function PharmacyProspecting() {
           </Link>
           <div className="h-6 w-px bg-gray-300" />
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-gray-600" />
-            <h1 className="font-semibold text-lg text-gray-900">Pharmacy Prospecting Map</h1>
+            {clientType === 'pharmacy' ? (
+              <Building2 className="h-5 w-5 text-gray-600" />
+            ) : (
+              <Leaf className="h-5 w-5 text-gray-600" />
+            )}
+            <h1 className="font-semibold text-lg text-gray-900">
+              {clientType === 'pharmacy' ? 'Pharmacy Prospecting Map' : 'Herbalist Prospecting Map'}
+            </h1>
           </div>
           {hasSearched && (
             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-              {displayedPharmacies.length} pharmacies
+              {displayedPharmacies.length} {labels.plural}
             </span>
           )}
         </div>
@@ -197,7 +230,10 @@ export default function PharmacyProspecting() {
             onSelectAll={handleSelectAll}
             onDeselectAll={handleDeselectAll}
             onSaveSelected={handleSaveSelected}
+            onSaveOne={handleSaveOne}
+            savedIds={savedIds}
             isSaving={savePharmacies.isPending}
+            labels={labels}
           />
         </div>
 

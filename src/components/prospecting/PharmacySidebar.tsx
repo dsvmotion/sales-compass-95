@@ -28,7 +28,17 @@ interface PharmacySidebarProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onSaveSelected: () => void;
+  onSaveOne?: (id: string) => void;
+  savedIds?: Set<string>;
   isSaving: boolean;
+  labels?: {
+    singular: string;
+    plural: string;
+    sidebarTitle: string;
+    searchButton: string;
+    noFound: string;
+    foundCount: (n: number) => string;
+  };
 }
 
 export function PharmacySidebar({
@@ -52,8 +62,14 @@ export function PharmacySidebar({
   onSelectAll,
   onDeselectAll,
   onSaveSelected,
+  onSaveOne,
+  savedIds = new Set(),
   isSaving,
+  labels,
 }: PharmacySidebarProps) {
+  const sidebarTitle = labels?.sidebarTitle ?? 'Pharmacies';
+  const searchButtonLabel = labels?.searchButton ?? 'Search Pharmacies';
+  const noFoundLabel = labels?.noFound ?? 'No pharmacies found';
   // Filter displayed pharmacies by text search and status
   const displayedPharmacies = useMemo(() => {
     return pharmacies.filter((pharmacy) => {
@@ -106,7 +122,7 @@ export function PharmacySidebar({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-3">
           <Building2 className="h-5 w-5 text-gray-600" />
-          <h2 className="font-semibold text-gray-900">Pharmacies</h2>
+          <h2 className="font-semibold text-gray-900">{sidebarTitle}</h2>
           {hasSearched && (
             <span className="text-xs text-gray-500 ml-auto">{stats.displayed} shown</span>
           )}
@@ -122,6 +138,7 @@ export function PharmacySidebar({
           onSearch={onSearch}
           isSearching={isSearching}
           isLoadingOptions={isLoadingOptions}
+          searchButtonLabel={searchButtonLabel}
         />
       </div>
 
@@ -180,13 +197,13 @@ export function PharmacySidebar({
               <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="font-medium text-gray-700">Select filters and click Search</p>
               <p className="text-xs mt-1 text-gray-400">
-                Choose Country → Province → City, then click "Search Pharmacies"
+                Choose Country → Province → City, then click &quot;{searchButtonLabel}&quot;
               </p>
             </div>
           ) : displayedPharmacies.length === 0 ? (
             <div className="text-center py-8 text-gray-500 text-sm">
               <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-gray-600">No pharmacies found</p>
+              <p className="text-gray-600">{noFoundLabel}</p>
               <p className="text-xs mt-1 text-gray-400">Try adjusting your filters</p>
             </div>
           ) : (
@@ -198,6 +215,9 @@ export function PharmacySidebar({
                 isChecked={selectedIds.has(pharmacy.id)}
                 onCheck={(checked) => onToggleSelect(pharmacy.id)}
                 onClick={() => onSelectPharmacy(pharmacy)}
+                onSaveOne={onSaveOne}
+                isSavedToOperations={pharmacy.saved_at != null || savedIds.has(pharmacy.id)}
+                isSaving={isSaving}
               />
             ))
           )}

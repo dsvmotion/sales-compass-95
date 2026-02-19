@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,9 +47,11 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-100" />
-        <DropdownMenuItem className="cursor-pointer text-gray-700 focus:bg-gray-100 focus:text-gray-900">
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+        <DropdownMenuItem asChild className="cursor-pointer text-gray-700 focus:bg-gray-100 focus:text-gray-900">
+          <Link to="/profile" className="flex items-center">
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-gray-100" />
         <DropdownMenuItem 

@@ -1,19 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Pharmacy } from '@/types/pharmacy';
+import { Pharmacy, type ClientType } from '@/types/pharmacy';
 import type { Json } from '@/integrations/supabase/types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export function usePharmacies() {
+export function usePharmacies(clientType?: ClientType) {
   return useQuery({
-    queryKey: ['pharmacies'],
+    queryKey: ['pharmacies', clientType ?? 'all'],
     queryFn: async (): Promise<Pharmacy[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('pharmacies')
         .select('*')
         .order('name');
+
+      if (clientType) {
+        query = query.eq('client_type', clientType);
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching pharmacies:', error);
@@ -172,6 +178,7 @@ export function useCachePharmacy() {
           lat: pharmacy.lat,
           lng: pharmacy.lng,
           google_data: pharmacy.google_data ? JSON.parse(JSON.stringify(pharmacy.google_data)) as Json : null,
+          client_type: 'pharmacy',
         }])
         .select()
         .single();

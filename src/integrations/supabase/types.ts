@@ -114,64 +114,88 @@ export type Database = {
       pharmacies: {
         Row: {
           address: string | null
+          autonomous_community: string | null
           city: string | null
+          client_type: Database["public"]["Enums"]["client_type"]
           commercial_status: Database["public"]["Enums"]["pharmacy_status"]
           country: string | null
           created_at: string
           email: string | null
           google_data: Json | null
-          google_place_id: string
+          google_place_id: string | null
           id: string
           lat: number
+          legal_form: string | null
           lng: number
           name: string
           notes: string | null
           opening_hours: Json | null
           phone: string | null
+          postal_code: string | null
           province: string | null
           saved_at: string | null
+          secondary_phone: string | null
+          sub_locality: string | null
+          subsector: string | null
+          activity: string | null
           updated_at: string
           website: string | null
         }
         Insert: {
           address?: string | null
+          autonomous_community?: string | null
           city?: string | null
+          client_type?: Database["public"]["Enums"]["client_type"]
           commercial_status?: Database["public"]["Enums"]["pharmacy_status"]
           country?: string | null
           created_at?: string
           email?: string | null
           google_data?: Json | null
-          google_place_id: string
+          google_place_id?: string | null
           id?: string
           lat: number
+          legal_form?: string | null
           lng: number
           name: string
           notes?: string | null
           opening_hours?: Json | null
           phone?: string | null
+          postal_code?: string | null
           province?: string | null
           saved_at?: string | null
+          secondary_phone?: string | null
+          sub_locality?: string | null
+          subsector?: string | null
+          activity?: string | null
           updated_at?: string
           website?: string | null
         }
         Update: {
           address?: string | null
+          autonomous_community?: string | null
           city?: string | null
+          client_type?: Database["public"]["Enums"]["client_type"]
           commercial_status?: Database["public"]["Enums"]["pharmacy_status"]
           country?: string | null
           created_at?: string
           email?: string | null
           google_data?: Json | null
-          google_place_id?: string
+          google_place_id?: string | null
           id?: string
           lat?: number
+          legal_form?: string | null
           lng?: number
           name?: string
           notes?: string | null
           opening_hours?: Json | null
           phone?: string | null
+          postal_code?: string | null
           province?: string | null
           saved_at?: string | null
+          secondary_phone?: string | null
+          sub_locality?: string | null
+          subsector?: string | null
+          activity?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -226,7 +250,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      pharmacy_status: "not_contacted" | "contacted" | "client"
+      client_type: "pharmacy" | "herbalist";
+      pharmacy_status: "not_contacted" | "contacted" | "client";
     }
     CompositeTypes: {
       [_ in never]: never
@@ -354,6 +379,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      client_type: ["pharmacy", "herbalist"],
       pharmacy_status: ["not_contacted", "contacted", "client"],
     },
   },

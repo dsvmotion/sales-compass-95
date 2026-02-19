@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PharmacyWithOrders, DetailedOrder } from '@/types/operations';
+import { PharmacyWithOrders, DetailedOrder, DocumentType, DOCUMENT_TYPE_LABELS } from '@/types/operations';
 import { PharmacyStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/pharmacy';
 import { 
   usePharmacyDocuments, 
@@ -64,6 +64,162 @@ function PaymentBadge({ status }: { status: 'paid' | 'pending' | 'failed' | 'ref
   );
 }
 
+const ACCEPTED_DOC_EXTENSIONS = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx';
+
+function DocumentsSection({ pharmacyId }: { pharmacyId: string }) {
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [selectedType, setSelectedType] = useState<DocumentType>('other');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: allDocuments = [] } = usePharmacyDocuments();
+  const uploadDocument = useUploadDocument();
+  const deleteDocument = useDeleteDocument();
+  const downloadDocument = useDownloadDocument();
+
+  const pharmacyDocs = allDocuments.filter((d) => d.pharmacyId === pharmacyId);
+
+  const handleUpload = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      toast.error('Please select a file');
+      return;
+    }
+    try {
+      await uploadDocument.mutateAsync({
+        pharmacyId,
+        orderId: null,
+        documentType: selectedType,
+        file,
+      });
+      toast.success(`${DOCUMENT_TYPE_LABELS[selectedType]} uploaded`);
+      setShowUploadForm(false);
+      setSelectedType('other');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      toast.error('Failed to upload document');
+    }
+  };
+
+  const handleDelete = async (id: string, filePath: string, label: string) => {
+    try {
+      await deleteDocument.mutateAsync({ id, filePath });
+      toast.success(`${label} deleted`);
+    } catch (error) {
+      toast.error('Failed to delete document');
+    }
+  };
+
+  const handleDownload = async (filePath: string, fileName: string) => {
+    try {
+      const blob = await downloadDocument.mutateAsync(filePath);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download file');
+    }
+  };
+
+  const DocIcon = ({ type }: { type: DocumentType }) =>
+    type === 'receipt' ? (
+      <Receipt className="h-4 w-4 text-gray-500" />
+    ) : (
+      <FileText className="h-4 w-4 text-gray-500" />
+    );
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+        <FileText className="h-3.5 w-3.5" />
+        Documents
+      </h3>
+      {!showUploadForm ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowUploadForm(true)}
+          className="border-gray-300 text-gray-700"
+        >
+          <Upload className="h-3.5 w-3.5 mr-1" />
+          Upload Document
+        </Button>
+      ) : (
+        <div className="p-3 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+          <Select value={selectedType} onValueChange={(v) => setSelectedType(v as DocumentType)}>
+            <SelectTrigger className="bg-white border-gray-300 h-8 text-sm">
+              <SelectValue placeholder="Document type" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-gray-200">
+              {(Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]).map((t) => (
+                <SelectItem key={t} value={t}>
+                  {DOCUMENT_TYPE_LABELS[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_DOC_EXTENSIONS}
+            className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-gray-200 file:text-gray-700"
+            onChange={() => {}}
+          />
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleUpload} disabled={uploadDocument.isPending}>
+              Upload
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowUploadForm(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="space-y-2 mt-3">
+        {pharmacyDocs.length === 0 ? (
+          <p className="text-xs text-gray-500">No documents yet</p>
+        ) : (
+          pharmacyDocs.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-center justify-between gap-2 p-2 rounded border border-gray-100 bg-white text-sm"
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <DocIcon type={doc.documentType} />
+                <div className="min-w-0">
+                  <p className="truncate text-gray-900 font-medium">{doc.fileName}</p>
+                  <p className="text-xs text-gray-500">
+                    {DOCUMENT_TYPE_LABELS[doc.documentType]} · {new Date(doc.uploadedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-gray-600"
+                  onClick={() => handleDownload(doc.filePath, doc.fileName)}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-gray-600 hover:text-red-600"
+                  onClick={() => handleDelete(doc.id, doc.filePath, DOCUMENT_TYPE_LABELS[doc.documentType])}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: string }) {
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const receiptInputRef = useRef<HTMLInputElement>(null);
@@ -84,7 +240,7 @@ function OrderCard({ order, pharmacyId }: { order: DetailedOrder; pharmacyId: st
         documentType: type,
         file,
       });
-      toast.success(`${type === 'invoice' ? 'Invoice' : 'Receipt'} uploaded`);
+      toast.success(`${DOCUMENT_TYPE_LABELS[type]} uploaded`);
     } catch (error) {
       toast.error(`Failed to upload ${type}`);
     }
@@ -419,6 +575,11 @@ export function PharmacyOperationsDetail({ pharmacy, onClose, onStatusUpdate }: 
               </div>
             )}
           </div>
+
+          <Separator />
+
+          {/* Documents */}
+          <DocumentsSection pharmacyId={pharmacy.id} />
 
           <Separator />
 

@@ -11,6 +11,8 @@ interface WooCommerceOrderResponse {
   customerType: 'pharmacy' | 'client';
   address: string;
   city: string;
+  country?: string;
+  province?: string;
   lat?: number | null;
   lng?: number | null;
   amount: number;
@@ -42,8 +44,8 @@ function transformOrderToSale(order: WooCommerceOrderResponse): Sale {
     customerType: order.customerType,
     address: order.address || '',
     city: order.city || '',
-    province: '',
-    country: 'Spain',
+    province: order.province || '',
+    country: order.country || '',
     lat: order.lat,
     lng: order.lng,
     amount: order.amount || 0,

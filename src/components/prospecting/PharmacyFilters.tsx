@@ -20,6 +20,7 @@ interface PharmacyFiltersProps {
   onSearch: () => void;
   isSearching: boolean;
   isLoadingOptions: boolean;
+  searchButtonLabel?: string;
 }
 
 export function PharmacyFilters({
@@ -32,6 +33,7 @@ export function PharmacyFilters({
   onSearch,
   isSearching,
   isLoadingOptions,
+  searchButtonLabel = 'Search Pharmacies',
 }: PharmacyFiltersProps) {
   const hasActiveGeoFilter = filters.country !== '' || filters.province !== '' || filters.city !== '';
 
@@ -117,7 +119,7 @@ export function PharmacyFilters({
         ) : (
           <>
             <Search className="h-4 w-4 mr-2" />
-            Search Pharmacies
+            {searchButtonLabel}
           </>
         )}
       </Button>

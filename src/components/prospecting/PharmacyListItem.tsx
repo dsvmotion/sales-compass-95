@@ -1,6 +1,7 @@
-import { MapPin, Phone, Globe, Check } from 'lucide-react';
+import { MapPin, Phone, Globe, Check, Save } from 'lucide-react';
 import { Pharmacy } from '@/types/pharmacy';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface PharmacyListItemProps {
@@ -9,6 +10,9 @@ interface PharmacyListItemProps {
   isChecked: boolean;
   onCheck: (checked: boolean) => void;
   onClick: () => void;
+  onSaveOne?: (id: string) => void;
+  isSavedToOperations?: boolean;
+  isSaving?: boolean;
 }
 
 function StatusBadge({ status, isSaved }: { status: 'not_contacted' | 'contacted' | 'client'; isSaved: boolean }) {
@@ -39,7 +43,16 @@ function StatusBadge({ status, isSaved }: { status: 'not_contacted' | 'contacted
   );
 }
 
-export function PharmacyListItem({ pharmacy, isSelected, isChecked, onCheck, onClick }: PharmacyListItemProps) {
+export function PharmacyListItem({
+  pharmacy,
+  isSelected,
+  isChecked,
+  onCheck,
+  onClick,
+  onSaveOne,
+  isSavedToOperations = false,
+  isSaving = false,
+}: PharmacyListItemProps) {
   const isSaved = pharmacy.saved_at !== null;
 
   return (
@@ -100,6 +113,34 @@ export function PharmacyListItem({ pharmacy, isSelected, isChecked, onCheck, onC
               </div>
             )}
           </div>
+
+          {/* Save to Operations - per card */}
+          {onSaveOne && (
+            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full h-7 text-xs border-gray-300"
+                disabled={isSavedToOperations || isSaving}
+                onClick={() => onSaveOne(pharmacy.id)}
+              >
+                {isSavedToOperations ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Saved ✓
+                  </>
+                ) : isSaving ? (
+                  'Saving...'
+                ) : (
+                  <>
+                    <Save className="h-3 w-3 mr-1" />
+                    Save to Operations
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

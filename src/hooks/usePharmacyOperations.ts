@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DetailedOrder, PharmacyWithOrders, PharmacyDocument } from '@/types/operations';
-import { Pharmacy } from '@/types/pharmacy';
+import { Pharmacy, type ClientType } from '@/types/pharmacy';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -49,8 +49,8 @@ export function usePharmacyDocuments() {
       return (data || []).map(doc => ({
         id: doc.id,
         pharmacyId: doc.pharmacy_id,
-        orderId: doc.order_id,
-        documentType: doc.document_type as 'invoice' | 'receipt',
+        orderId: doc.order_id ?? null,
+        documentType: doc.document_type as PharmacyDocument['documentType'],
         filePath: doc.file_path,
         fileName: doc.file_name,
         uploadedAt: doc.uploaded_at,
@@ -60,28 +60,48 @@ export function usePharmacyDocuments() {
   });
 }
 
-export function usePharmaciesWithOrders(savedOnly: boolean = true) {
+export function usePharmaciesWithOrders(savedOnly: boolean = true, clientType?: ClientType) {
   const { data: pharmacies = [], isLoading: pharmaciesLoading } = useQuery({
-    queryKey: ['pharmacies', savedOnly ? 'saved' : 'all'],
+    queryKey: ['pharmacies', savedOnly ? 'saved' : 'all', clientType ?? 'all'],
     queryFn: async (): Promise<Pharmacy[]> => {
-      let query = supabase
-        .from('pharmacies')
-        .select('*')
-        .order('name');
+      const allData: Pharmacy[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
 
-      // Only fetch saved pharmacies for Operations view
-      if (savedOnly) {
-        query = query.not('saved_at', 'is', null);
+      while (hasMore) {
+        let query = supabase
+          .from('pharmacies')
+          .select('*')
+          .order('autonomous_community')
+          .order('postal_code')
+          .order('name')
+          .range(from, from + pageSize - 1);
+
+        if (savedOnly) {
+          query = query.not('saved_at', 'is', null);
+        }
+        if (clientType) {
+          query = query.eq('client_type', clientType);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error fetching pharmacies:', error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allData.push(...(data as Pharmacy[]));
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching pharmacies:', error);
-        return [];
-      }
-
-      return (data || []) as Pharmacy[];
+      return allData;
     },
   });
 
@@ -138,6 +158,7 @@ export function usePharmaciesWithOrders(savedOnly: boolean = true) {
       city: pharmacy.city,
       province: pharmacy.province,
       country: pharmacy.country,
+      clientType: pharmacy.client_type || 'pharmacy',
       phone: pharmacy.phone,
       email: pharmacy.email,
       commercialStatus: pharmacy.commercial_status,
@@ -147,6 +168,15 @@ export function usePharmaciesWithOrders(savedOnly: boolean = true) {
       totalRevenue,
       hasInvoice,
       hasReceipt,
+      lat: pharmacy.lat,
+      lng: pharmacy.lng,
+      savedAt: pharmacy.saved_at ?? null,
+      postal_code: pharmacy.postal_code ?? null,
+      autonomous_community: pharmacy.autonomous_community ?? null,
+      secondary_phone: pharmacy.secondary_phone ?? null,
+      activity: pharmacy.activity ?? null,
+      subsector: pharmacy.subsector ?? null,
+      legal_form: pharmacy.legal_form ?? null,
     };
   });
 
@@ -167,13 +197,13 @@ export function useUploadDocument() {
       file,
     }: {
       pharmacyId: string;
-      orderId: string;
-      documentType: 'invoice' | 'receipt';
+      orderId: string | null;
+      documentType: PharmacyDocument['documentType'];
       file: File;
     }) => {
-      // Upload file to storage
-      const filePath = `${pharmacyId}/${orderId}/${documentType}-${Date.now()}-${file.name}`;
-      
+      const folder = orderId ?? 'general';
+      const filePath = `${pharmacyId}/${folder}/${documentType}-${Date.now()}-${file.name}`;
+
       const { error: uploadError } = await supabase.storage
         .from('pharmacy-documents')
         .upload(filePath, file);
@@ -182,7 +212,6 @@ export function useUploadDocument() {
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      // Create document record
       const { data, error } = await supabase
         .from('pharmacy_order_documents')
         .insert({

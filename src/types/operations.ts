@@ -1,3 +1,5 @@
+import type { ClientType } from '@/types/pharmacy';
+
 export interface DetailedOrder {
   id: string;
   orderId: string;
@@ -34,6 +36,7 @@ export interface PharmacyWithOrders {
   city: string | null;
   province: string | null;
   country: string | null;
+  clientType: ClientType;
   phone: string | null;
   email: string | null;
   commercialStatus: 'not_contacted' | 'contacted' | 'client';
@@ -43,6 +46,15 @@ export interface PharmacyWithOrders {
   totalRevenue: number;
   hasInvoice: boolean;
   hasReceipt: boolean;
+  lat: number;
+  lng: number;
+  savedAt: string | null;
+  postal_code?: string | null;
+  autonomous_community?: string | null;
+  secondary_phone?: string | null;
+  activity?: string | null;
+  subsector?: string | null;
+  legal_form?: string | null;
 }
 
 export interface OperationsFilters {
@@ -54,14 +66,24 @@ export interface OperationsFilters {
   paymentStatus: 'all' | 'paid' | 'pending' | 'failed' | 'refunded';
 }
 
-export type SortField = 'name' | 'commercialStatus' | 'totalRevenue' | 'paymentStatus' | 'lastOrderDate';
+export type SortField = 'name' | 'address' | 'postal_code' | 'city' | 'province' | 'autonomous_community' | 'phone' | 'secondary_phone' | 'email' | 'activity' | 'subsector' | 'legal_form' | 'commercialStatus' | 'lastOrderDate' | 'totalRevenue' | 'paymentStatus';
 export type SortDirection = 'asc' | 'desc';
+
+export type DocumentType = 'invoice' | 'receipt' | 'contract' | 'delivery_note' | 'other';
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  invoice: 'Invoice',
+  receipt: 'Receipt',
+  contract: 'Contract',
+  delivery_note: 'Delivery Note',
+  other: 'Other',
+};
 
 export interface PharmacyDocument {
   id: string;
   pharmacyId: string;
-  orderId: string;
-  documentType: 'invoice' | 'receipt';
+  orderId: string | null;
+  documentType: DocumentType;
   filePath: string;
   fileName: string;
   uploadedAt: string;

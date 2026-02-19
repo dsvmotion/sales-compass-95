@@ -1,8 +1,10 @@
 export type PharmacyStatus = 'not_contacted' | 'contacted' | 'client';
 
+export type ClientType = 'pharmacy' | 'herbalist';
+
 export interface Pharmacy {
   id: string;
-  google_place_id: string;
+  google_place_id: string | null;
   name: string;
   address: string | null;
   city: string | null;
@@ -19,7 +21,15 @@ export interface Pharmacy {
   google_data: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  client_type: ClientType;
   saved_at: string | null;
+  postal_code?: string | null;
+  autonomous_community?: string | null;
+  secondary_phone?: string | null;
+  activity?: string | null;
+  subsector?: string | null;
+  legal_form?: string | null;
+  sub_locality?: string | null;
 }
 
 export interface PharmacyFilters {
@@ -40,6 +50,11 @@ export const STATUS_COLORS: Record<PharmacyStatus, { bg: string; text: string; p
   not_contacted: { bg: 'bg-yellow-100', text: 'text-yellow-800', pin: '#eab308' }, // Yellow
   contacted: { bg: 'bg-blue-100', text: 'text-blue-800', pin: '#3b82f6' }, // Blue
   client: { bg: 'bg-green-100', text: 'text-green-800', pin: '#22c55e' }, // Green
+};
+
+export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
+  pharmacy: 'Pharmacy',
+  herbalist: 'Herbalist',
 };
 
 // WooCommerce-only customer color (not matched to pharmacy)

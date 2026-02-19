@@ -41,6 +41,8 @@ interface GeocodedOrder {
   customerType: 'pharmacy' | 'client';
   address: string;
   city: string;
+  country: string;
+  province: string;
   lat: number;
   lng: number;
   amount: number;
@@ -143,31 +145,9 @@ serve(async (req) => {
   }
 
   try {
-    // Verify JWT authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const wooUrl = Deno.env.get('WOOCOMMERCE_URL');
     const consumerKey = Deno.env.get('WOOCOMMERCE_CONSUMER_KEY');
@@ -239,6 +219,8 @@ serve(async (req) => {
         customerType: isPharmacy(order) ? 'pharmacy' : 'client',
         address: order.billing.address_1,
         city: order.billing.city,
+        country: order.billing.country || '',
+        province: order.billing.state || '',
         lat: geo.location.lat,
         lng: geo.location.lng,
         amount: parseFloat(order.total),
