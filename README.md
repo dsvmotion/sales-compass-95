@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Sales Compass 95
 
-## Project info
+App de gestión de ventas para equipos comerciales. Incluye prospección de farmacias (mapas, búsqueda, filtros geográficos), operaciones (pedidos WooCommerce, documentos) y autenticación con Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+- **Frontend:** Vite, React 18, TypeScript
+- **UI:** shadcn-ui, Tailwind CSS, Lucide icons
+- **Backend / BBDD:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Mapas:** Google Maps API (@react-google-maps/api)
+- **Estado / datos:** TanStack Query (React Query), React Hook Form + Zod
 
-There are several ways of editing your application.
+## Requisitos
 
-**Use Lovable**
+- Node.js 18+ y npm
+- Cuenta Supabase y proyecto configurado
+- Claves de Google Maps (Maps JavaScript API, Places API) si usas prospección
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Instalación
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+# Clonar y entrar al proyecto
+git clone <URL_DEL_REPO>
+cd sales-compass-95
 
-**Use your preferred IDE**
+# Instalar dependencias
+npm install
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Variables de entorno: crear .env.local en la raíz con:
+# VITE_SUPABASE_URL=https://xxx.supabase.co
+# VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...
+# VITE_GOOGLE_MAPS_API_KEY=tu_api_key  (opcional, para mapas/places)
 ```
 
-**Edit a file directly in GitHub**
+## Scripts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Script        | Descripción                    |
+|---------------|--------------------------------|
+| `npm run dev` | Servidor de desarrollo (Vite) |
+| `npm run build` | Build de producción          |
+| `npm run build:dev` | Build en modo development   |
+| `npm run preview` | Previsualizar build         |
+| `npm run lint` | ESLint                       |
+| `npm run test` | Tests (Vitest)               |
+| `npm run test:watch` | Tests en modo watch     |
 
-**Use GitHub Codespaces**
+## Estructura del proyecto
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+sales-compass-95/
+├── public/                 # Assets estáticos
+│   ├── robots.txt
+│   └── placeholder.svg
+├── src/
+│   ├── components/         # Componentes React
+│   │   ├── ui/             # Componentes shadcn-ui (button, card, dialog, etc.)
+│   │   ├── auth/           # ProtectedRoute, UserMenu
+│   │   ├── prospecting/    # PharmacySidebar, ProspectingMap, PharmacyDetailPanel, etc.
+│   │   ├── operations/     # OperationsTable, OperationsFiltersBar, PharmacyOperationsDetail
+│   │   ├── Header.tsx, NavLink.tsx, SalesMap.tsx, PharmacyGoogleMap.tsx, StatCard.tsx
+│   ├── contexts/           # AuthContext (Supabase Auth)
+│   ├── hooks/              # usePharmacies, useProspectingSearch, useSavePharmacies,
+│   │                       # usePharmacyOperations, useWooCommerceOrders, useGeographyOptions, etc.
+│   ├── integrations/
+│   │   └── supabase/       # client.ts, types.ts (generados/ligados a Supabase)
+│   ├── pages/              # Index, Login, Signup, PharmacyProspecting, PharmacyOperations, NotFound
+│   ├── types/              # sale.ts, pharmacy.ts, operations.ts
+│   ├── lib/utils.ts
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── supabase/
+│   ├── config.toml         # Configuración del proyecto Supabase
+│   ├── migrations/         # SQL: pharmacies, geography_*, pharmacy_order_documents, storage, RLS
+│   └── functions/          # Edge Functions: woocommerce-orders, woocommerce-orders-detailed,
+│                          # google-places-pharmacies, populate-geography
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── tailwind.config.ts
+```
 
-## What technologies are used for this project?
+## Supabase
 
-This project is built with:
+- **Tablas:** `pharmacies`, `geography_countries`, `geography_provinces`, `geography_cities`, `pharmacy_order_documents`
+- **Storage:** bucket `pharmacy-documents` (facturas/recibos)
+- **Edge Functions:** WooCommerce orders (y detailed), Google Places pharmacies, populate geography
+- **Auth:** Email/password; RLS habilitado en tablas y storage
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Aplicar migraciones con Supabase CLI desde la raíz:
 
-## How can I deploy this project?
+```bash
+supabase db push
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Desarrollo local
 
-## Can I connect a custom domain to my Lovable project?
+1. Configura `.env.local` con `VITE_SUPABASE_*` y opcionalmente `VITE_GOOGLE_MAPS_API_KEY`.
+2. `npm run dev` y abre la URL que indique Vite (por defecto puerto 8080).
+3. Para probar Edge Functions en local: `supabase functions serve` (y ajustar URLs si es necesario).
 
-Yes, you can!
+## Licencia
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Privado / uso interno.
