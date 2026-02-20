@@ -10,9 +10,11 @@ interface SaveResult {
 /**
  * Hook for saving selected pharmacies to Operations.
  * Sets the `saved_at` timestamp to mark them as explicitly saved.
+ * @param clientType - 'herbalist' | 'pharmacy' for correct toast label
  */
-export function useSavePharmacies() {
+export function useSavePharmacies(clientType?: string) {
   const queryClient = useQueryClient();
+  const label = clientType === 'herbalist' ? 'herbalists' : 'pharmacies';
 
   return useMutation({
     mutationFn: async (pharmacyIds: string[]): Promise<SaveResult> => {
@@ -56,13 +58,13 @@ export function useSavePharmacies() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['pharmacies'] });
       queryClient.invalidateQueries({ queryKey: ['saved-pharmacies'] });
-      
+
       if (result.saved > 0 && result.skipped > 0) {
-        toast.success(`Saved ${result.saved} pharmacies (${result.skipped} already saved)`);
+        toast.success(`Saved ${result.saved} ${label} (${result.skipped} already saved)`);
       } else if (result.saved > 0) {
-        toast.success(`Saved ${result.saved} pharmacies to Operations`);
+        toast.success(`Saved ${result.saved} ${label} to Operations`);
       } else {
-        toast.info('All selected pharmacies were already saved');
+        toast.info(`All selected ${label} were already saved`);
       }
     },
     onError: (error: Error) => {

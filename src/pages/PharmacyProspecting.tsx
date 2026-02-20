@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { PharmacySidebar } from '@/components/prospecting/PharmacySidebar';
 import { ProspectingMap } from '@/components/prospecting/ProspectingMap';
 import { PharmacyDetailPanel } from '@/components/prospecting/PharmacyDetailPanel';
+import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 import { useProspectingSearch } from '@/hooks/useProspectingSearch';
 import { useSavePharmacies } from '@/hooks/useSavePharmacies';
 import { Pharmacy, PharmacyFilters as Filters, type ClientType } from '@/types/pharmacy';
@@ -37,6 +38,8 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
+  const { countries, provinces, cities } = useGeographyOptions(filters.country, filters.province);
+
   // Manual search hook
   const {
     results: searchResults,
@@ -61,7 +64,7 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
   }, [detectedLocation]);
 
   // Save pharmacies mutation
-  const savePharmacies = useSavePharmacies();
+  const savePharmacies = useSavePharmacies(clientType);
 
   // Filter displayed results by text search and status
   const displayedPharmacies = useMemo(() => {
@@ -211,6 +214,9 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
             onFiltersChange={handleFiltersChange}
             onClearFilters={handleClearFilters}
             hasSearched={hasSearched}
+            countries={countries}
+            provinces={provinces}
+            cities={cities}
             onSearch={handleSearch}
             isSearching={isSearching}
             progress={progress}

@@ -8,11 +8,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS } from '@/types/pharmacy';
 
 interface PharmacyFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  countries: string[];
+  provinces: string[];
+  cities: string[];
   onClearFilters: () => void;
   onSearch: () => void;
   isSearching: boolean;
@@ -22,6 +26,9 @@ interface PharmacyFiltersProps {
 export function PharmacyFilters({
   filters,
   onFiltersChange,
+  countries,
+  provinces,
+  cities,
   onClearFilters,
   onSearch,
   isSearching,
@@ -31,25 +38,25 @@ export function PharmacyFilters({
 
   return (
     <div className="space-y-3">
-      <Input
-        placeholder="Country (e.g. Spain, France)"
-        value={filters.country}
-        onChange={(e) => onFiltersChange({ ...filters, country: e.target.value })}
-        className="bg-white border-gray-300 text-gray-900"
+      <SearchableSelect
+        value={filters.country || ''}
+        onValueChange={(value) => onFiltersChange({ ...filters, country: value === 'all' ? '' : value })}
+        options={countries}
+        placeholder="Country (type or select)"
       />
 
-      <Input
-        placeholder="Province (optional)"
-        value={filters.province}
-        onChange={(e) => onFiltersChange({ ...filters, province: e.target.value })}
-        className="bg-white border-gray-300 text-gray-900"
+      <SearchableSelect
+        value={filters.province || ''}
+        onValueChange={(value) => onFiltersChange({ ...filters, province: value === 'all' ? '' : value })}
+        options={provinces}
+        placeholder="Province (type or select)"
       />
 
-      <Input
-        placeholder="City (e.g. Toulouse, Madrid)"
-        value={filters.city}
-        onChange={(e) => onFiltersChange({ ...filters, city: e.target.value })}
-        className="bg-white border-gray-300 text-gray-900"
+      <SearchableSelect
+        value={filters.city || ''}
+        onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
+        options={cities}
+        placeholder="City (type or select)"
       />
 
       {/* Search Button */}

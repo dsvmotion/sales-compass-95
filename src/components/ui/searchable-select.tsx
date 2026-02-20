@@ -37,6 +37,7 @@ export function SearchableSelect({
   disabled = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
 
   const sortedOptions = React.useMemo(
     () => [...options].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
@@ -44,6 +45,26 @@ export function SearchableSelect({
   );
 
   const displayValue = value && value !== "all" ? value : null;
+
+  React.useEffect(() => {
+    if (open) {
+      setInputValue(value && value !== "all" ? value : "");
+    }
+  }, [open, value]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const trimmed = inputValue.trim();
+      const hasExactMatch = sortedOptions.some(
+        (o) => o.localeCompare(trimmed, undefined, { sensitivity: "base" }) === 0
+      );
+      if (trimmed && !hasExactMatch) {
+        onValueChange(trimmed);
+        setOpen(false);
+        e.preventDefault();
+      }
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,6 +86,8 @@ export function SearchableSelect({
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0 bg-white border-gray-200" align="start">
         <Command
+          value={inputValue}
+          onValueChange={setInputValue}
           filter={(filterValue, search) => {
             if (!search) return 1;
             const v = (filterValue ?? "").toLowerCase();
@@ -72,7 +95,7 @@ export function SearchableSelect({
             return v.includes(s) ? 1 : 0;
           }}
         >
-          <CommandInput placeholder="Search..." className="h-9" />
+          <CommandInput placeholder="Search..." className="h-9" onKeyDown={handleKeyDown} />
           <CommandList>
             <CommandEmpty>No match.</CommandEmpty>
             <CommandGroup>
