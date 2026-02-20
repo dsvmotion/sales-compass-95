@@ -1,18 +1,8 @@
 "use client";
-
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
@@ -37,32 +27,39 @@ export function SearchableSelect({
   disabled = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
+  const [search, setSearch] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const sortedOptions = React.useMemo(
     () => [...options].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
     [options]
   );
 
-  const displayValue = value && value !== "all" ? value : null;
+  const filtered = React.useMemo(() => {
+    if (!search) return sortedOptions;
+    const s = search.toLowerCase();
+    return sortedOptions.filter((o) => o.toLowerCase().includes(s));
+  }, [sortedOptions, search]);
+
+  const displayValue = value && value !== "all" ? value : "";
 
   React.useEffect(() => {
     if (open) {
-      setInputValue(value && value !== "all" ? value : "");
+      setSearch("");
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
-  }, [open, value]);
+  }, [open]);
+
+  const handleSelect = (val: string) => {
+    onValueChange(val);
+    setOpen(false);
+    setSearch("");
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      const trimmed = inputValue.trim();
-      const hasExactMatch = sortedOptions.some(
-        (o) => o.localeCompare(trimmed, undefined, { sensitivity: "base" }) === 0
-      );
-      if (trimmed && !hasExactMatch) {
-        onValueChange(trimmed);
-        setOpen(false);
-        e.preventDefault();
-      }
+    if (e.key === "Enter" && search.trim()) {
+      e.preventDefault();
+      handleSelect(search.trim());
     }
   };
 
@@ -75,69 +72,73 @@ export function SearchableSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "h-9 w-full justify-between border rounded-md bg-white border-gray-300 text-gray-900 font-normal",
+            "h-9 w-full justify-between border rounded-md bg-white border-gray-300 text-gray-900 font-normal text-sm",
+            !displayValue && "text-gray-500",
             disabled && "opacity-50",
             className
           )}
         >
-          {displayValue ?? placeholder}
+          <span className="truncate">{displayValue || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 bg-white border-gray-200" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-        <Command
-          value={inputValue}
-          onValueChange={setInputValue}
-          filter={(filterValue, search) => {
-            if (!search) return 1;
-            const v = (filterValue ?? "").toLowerCase();
-            const s = (search ?? "").toLowerCase();
-            return v.includes(s) ? 1 : 0;
-          }}
-        >
-          <CommandInput placeholder="Search..." className="h-9" onKeyDown={handleKeyDown} />
-          <CommandList>
-            <CommandEmpty>
-              {inputValue.trim() ? `Press Enter to use "${inputValue.trim()}"` : "No match."}
-            </CommandEmpty>
-            <CommandGroup>
-              <CommandItem
-                value="all"
-                onSelect={() => {
-                  onValueChange("all");
-                  setOpen(false);
-                }}
-              >
-                <Check className={cn("mr-2 h-4 w-4", (value === "all" || !value) ? "opacity-100" : "opacity-0")} />
-                All
-              </CommandItem>
-              {inputValue.trim() && !sortedOptions.some((o) => o.localeCompare(inputValue.trim(), undefined, { sensitivity: "base" }) === 0) && (
-                <CommandItem
-                  value={`custom-${inputValue.trim()}`}
-                  onSelect={() => {
-                    onValueChange(inputValue.trim());
-                    setOpen(false);
-                  }}
-                >
-                  Use &quot;{inputValue.trim()}&quot;
-                </CommandItem>
+      <PopoverContent
+        className="p-0 bg-white border-gray-200"
+        align="start"
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+      >
+        <div className="flex flex-col">
+          <input
+            ref={inputRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type to search..."
+            className="px-3 py-2 text-sm border-b border-gray-200 outline-none"
+          />
+          <div className="max-h-60 overflow-y-auto">
+            {/* All option */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100 text-left",
+                (!value || value === "all") && "font-medium"
               )}
-              {sortedOptions.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={() => {
-                    onValueChange(option);
-                    setOpen(false);
-                  }}
-                >
-                  <Check className={cn("mr-2 h-4 w-4", value === option ? "opacity-100" : "opacity-0")} />
-                  {option}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+              onClick={() => handleSelect("all")}
+            >
+              <Check className={cn("mr-2 h-4 w-4", (!value || value === "all") ? "opacity-100" : "opacity-0")} />
+              All
+            </button>
+            {/* Custom value option when typing something not in list */}
+            {search.trim() && filtered.length === 0 && (
+              <button
+                type="button"
+                className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100 text-left text-blue-600"
+                onClick={() => handleSelect(search.trim())}
+              >
+                Use &quot;{search.trim()}&quot;
+              </button>
+            )}
+            {/* Options */}
+            {filtered.map((option) => (
+              <button
+                type="button"
+                key={option}
+                className={cn(
+                  "flex items-center w-full px-3 py-2 text-sm hover:bg-gray-100 text-left",
+                  value === option && "font-medium"
+                )}
+                onClick={() => handleSelect(option)}
+              >
+                <Check className={cn("mr-2 h-4 w-4", value === option ? "opacity-100" : "opacity-0")} />
+                {option}
+              </button>
+            ))}
+            {filtered.length === 0 && !search.trim() && (
+              <div className="px-3 py-2 text-sm text-gray-500">No options available</div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
