@@ -75,7 +75,7 @@ export function SearchableSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "h-9 w-40 justify-between border rounded-md bg-white border-gray-300 text-gray-900 font-normal",
+            "h-9 w-full justify-between border rounded-md bg-white border-gray-300 text-gray-900 font-normal",
             disabled && "opacity-50",
             className
           )}
@@ -84,7 +84,7 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0 bg-white border-gray-200" align="start">
+      <PopoverContent className="p-0 bg-white border-gray-200" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
         <Command
           value={inputValue}
           onValueChange={setInputValue}
@@ -97,7 +97,9 @@ export function SearchableSelect({
         >
           <CommandInput placeholder="Search..." className="h-9" onKeyDown={handleKeyDown} />
           <CommandList>
-            <CommandEmpty>No match.</CommandEmpty>
+            <CommandEmpty>
+              {inputValue.trim() ? `Press Enter to use "${inputValue.trim()}"` : "No match."}
+            </CommandEmpty>
             <CommandGroup>
               <CommandItem
                 value="all"
@@ -109,6 +111,17 @@ export function SearchableSelect({
                 <Check className={cn("mr-2 h-4 w-4", (value === "all" || !value) ? "opacity-100" : "opacity-0")} />
                 All
               </CommandItem>
+              {inputValue.trim() && !sortedOptions.some((o) => o.localeCompare(inputValue.trim(), undefined, { sensitivity: "base" }) === 0) && (
+                <CommandItem
+                  value={`custom-${inputValue.trim()}`}
+                  onSelect={() => {
+                    onValueChange(inputValue.trim());
+                    setOpen(false);
+                  }}
+                >
+                  Use &quot;{inputValue.trim()}&quot;
+                </CommandItem>
+              )}
               {sortedOptions.map((option) => (
                 <CommandItem
                   key={option}
