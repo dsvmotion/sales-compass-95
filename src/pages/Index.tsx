@@ -7,6 +7,7 @@ import { usePharmaciesWithOrders } from '@/hooks/usePharmacyOperations';
 import { Sale } from '@/types/sale';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { UserMenu } from '@/components/auth/UserMenu';
 
@@ -309,51 +310,33 @@ const Index = () => {
               <span className="text-sm font-medium text-gray-500">Filters:</span>
               
               {/* Country - from actual order data */}
-              <Select value={filters.country || 'all'} onValueChange={handleCountryChange}>
-                <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900">
-                  <SelectValue placeholder="Country" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
-                  <SelectItem value="all">All Countries</SelectItem>
-                  {uniqueCountries.map(code => (
-                    <SelectItem key={code} value={code}>{code}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={filters.country || 'all'}
+                onValueChange={handleCountryChange}
+                options={uniqueCountries}
+                placeholder="All Countries"
+                className="w-40"
+              />
 
               {/* Province - from actual order data */}
-              <Select 
-                value={filters.province || 'all'} 
+              <SearchableSelect
+                value={filters.province || 'all'}
                 onValueChange={handleProvinceChange}
+                options={uniqueProvinces}
+                placeholder={filters.country ? (uniqueProvinces.length > 0 ? 'All Provinces' : 'No provinces') : 'Select Country'}
                 disabled={!filters.country}
-              >
-                <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-                  <SelectValue placeholder={filters.country ? (uniqueProvinces.length > 0 ? 'Province' : 'No provinces') : 'Select Country'} />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
-                  <SelectItem value="all">All Provinces</SelectItem>
-                  {uniqueProvinces.map(code => (
-                    <SelectItem key={code} value={code}>{code}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                className="w-40"
+              />
 
               {/* City - from actual order data */}
-              <Select 
-                value={filters.city || 'all'} 
+              <SearchableSelect
+                value={filters.city || 'all'}
                 onValueChange={handleCityChange}
+                options={uniqueCities}
+                placeholder={filters.province ? (uniqueCities.length > 0 ? 'All Cities' : 'No cities') : 'Select Province'}
                 disabled={!filters.province}
-              >
-                <SelectTrigger className={`w-40 bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
-                  <SelectValue placeholder={filters.province ? (uniqueCities.length > 0 ? 'City' : 'No cities') : 'Select Province'} />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 max-h-60 z-50">
-                  <SelectItem value="all">All Cities</SelectItem>
-                  {uniqueCities.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                className="w-40"
+              />
               
               {/* Customer Type */}
               <Select
