@@ -1,4 +1,4 @@
-import { Search, MapPin, Filter, X, Loader2 } from 'lucide-react';
+import { Search, Filter, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,97 +13,44 @@ import { PharmacyFilters as Filters, PharmacyStatus, STATUS_LABELS } from '@/typ
 interface PharmacyFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
-  countries: string[];
-  provinces: string[];
-  cities: string[];
   onClearFilters: () => void;
   onSearch: () => void;
   isSearching: boolean;
-  isLoadingOptions: boolean;
   searchButtonLabel?: string;
 }
 
 export function PharmacyFilters({
   filters,
   onFiltersChange,
-  countries,
-  provinces,
-  cities,
   onClearFilters,
   onSearch,
   isSearching,
-  isLoadingOptions,
   searchButtonLabel = 'Search Pharmacies',
 }: PharmacyFiltersProps) {
   const hasActiveGeoFilter = filters.country !== '' || filters.province !== '' || filters.city !== '';
 
   return (
     <div className="space-y-3">
-      {/* Country - From normalized geography tables */}
-      <Select
-        value={filters.country || 'all'}
-        onValueChange={(value) => onFiltersChange({ 
-          ...filters, 
-          country: value === 'all' ? '' : value,
-          province: '',
-          city: ''
-        })}
-      >
-        <SelectTrigger className="bg-white border-gray-300 text-gray-900">
-          <SelectValue placeholder="Select Country" />
-        </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
-          <SelectItem value="all">All Countries</SelectItem>
-          {countries.map((country) => (
-            <SelectItem key={country} value={country}>
-              {country}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Input
+        placeholder="Country (e.g. Spain, France)"
+        value={filters.country}
+        onChange={(e) => onFiltersChange({ ...filters, country: e.target.value })}
+        className="bg-white border-gray-300 text-gray-900"
+      />
 
-      {/* Province - From normalized geography tables */}
-      <Select
-        value={filters.province || 'all'}
-        onValueChange={(value) => onFiltersChange({ 
-          ...filters, 
-          province: value === 'all' ? '' : value,
-          city: ''
-        })}
-        disabled={!filters.country}
-      >
-        <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.country ? 'opacity-50' : ''}`}>
-          <SelectValue placeholder={filters.country ? (provinces.length > 0 ? 'Select Province' : 'No provinces available') : 'Select Country first'} />
-        </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
-          <SelectItem value="all">All Provinces</SelectItem>
-          {provinces.map((province) => (
-            <SelectItem key={province} value={province}>
-              {province}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Input
+        placeholder="Province (optional)"
+        value={filters.province}
+        onChange={(e) => onFiltersChange({ ...filters, province: e.target.value })}
+        className="bg-white border-gray-300 text-gray-900"
+      />
 
-      {/* City - From normalized geography tables */}
-      <Select
-        value={filters.city || 'all'}
-        onValueChange={(value) => onFiltersChange({ ...filters, city: value === 'all' ? '' : value })}
-        disabled={!filters.province}
-      >
-        <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${!filters.province ? 'opacity-50' : ''}`}>
-          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-          <SelectValue placeholder={filters.province ? (cities.length > 0 ? 'Select City' : 'No cities available') : 'Select Province first'} />
-        </SelectTrigger>
-        <SelectContent className="bg-white border-gray-200 z-50 max-h-60">
-          <SelectItem value="all">All Cities</SelectItem>
-          {cities.map((city) => (
-            <SelectItem key={city} value={city}>
-              {city}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Input
+        placeholder="City (e.g. Toulouse, Madrid)"
+        value={filters.city}
+        onChange={(e) => onFiltersChange({ ...filters, city: e.target.value })}
+        className="bg-white border-gray-300 text-gray-900"
+      />
 
       {/* Search Button */}
       <Button

@@ -1,11 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ArrowLeft, XCircle, Building2, Leaf } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PharmacySidebar } from '@/components/prospecting/PharmacySidebar';
 import { ProspectingMap } from '@/components/prospecting/ProspectingMap';
 import { PharmacyDetailPanel } from '@/components/prospecting/PharmacyDetailPanel';
-import { useGeographyOptions } from '@/hooks/useGeographyOptions';
 import { useProspectingSearch } from '@/hooks/useProspectingSearch';
 import { useSavePharmacies } from '@/hooks/useSavePharmacies';
 import { Pharmacy, PharmacyFilters as Filters, type ClientType } from '@/types/pharmacy';
@@ -38,12 +37,6 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  // Geography options from unified normalized tables
-  const { countries, provinces, cities, isLoading: isLoadingOptions } = useGeographyOptions(
-    filters.country,
-    filters.province
-  );
-
   // Manual search hook
   const {
     results: searchResults,
@@ -53,7 +46,19 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
     executeSearch,
     clearResults,
     cancelSearch,
+    detectedLocation,
   } = useProspectingSearch();
+
+  // Auto-fill country/province from first Google Places result when user had not set country
+  useEffect(() => {
+    if (detectedLocation && !filters.country) {
+      setFilters((prev) => ({
+        ...prev,
+        country: detectedLocation.country || prev.country,
+        province: detectedLocation.province || prev.province,
+      }));
+    }
+  }, [detectedLocation]);
 
   // Save pharmacies mutation
   const savePharmacies = useSavePharmacies();
@@ -86,21 +91,9 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
     setSelectedPharmacy(null);
   }, []);
 
-  const handleFiltersChange = useCallback(
-    (newFilters: Filters) => {
-      // Enforce strict hierarchy: changing country resets province+city; changing province resets city.
-      if (newFilters.country !== filters.country) {
-        setFilters({ ...newFilters, province: '', city: '' });
-        return;
-      }
-      if (newFilters.province !== filters.province) {
-        setFilters({ ...newFilters, city: '' });
-        return;
-      }
-      setFilters(newFilters);
-    },
-    [filters.country, filters.province]
-  );
+  const handleFiltersChange = useCallback((newFilters: Filters) => {
+    setFilters(newFilters);
+  }, []);
 
   const handleClearFilters = useCallback(() => {
     setFilters(initialFilters);
@@ -218,10 +211,6 @@ export default function PharmacyProspecting({ clientType = 'pharmacy' }: Props) 
             onFiltersChange={handleFiltersChange}
             onClearFilters={handleClearFilters}
             hasSearched={hasSearched}
-            countries={countries}
-            provinces={provinces}
-            cities={cities}
-            isLoadingOptions={isLoadingOptions}
             onSearch={handleSearch}
             isSearching={isSearching}
             progress={progress}

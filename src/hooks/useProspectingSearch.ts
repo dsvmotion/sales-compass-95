@@ -49,12 +49,14 @@ export function useProspectingSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [progress, setProgress] = useState({ found: 0, cached: 0 });
+  const [detectedLocation, setDetectedLocation] = useState<{ country: string; province: string } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const clearResults = useCallback(() => {
     setResults([]);
     setHasSearched(false);
     setProgress({ found: 0, cached: 0 });
+    setDetectedLocation(null);
   }, []);
 
   /**
@@ -79,6 +81,7 @@ export function useProspectingSearch() {
     setHasSearched(true);
     setResults([]);
     setProgress({ found: 0, cached: 0 });
+    setDetectedLocation(null);
 
     try {
       // Build search query for Google Places
@@ -184,6 +187,12 @@ export function useProspectingSearch() {
 
         if (existing) {
           cachedPharmacies.push(existing as Pharmacy);
+          if (cachedPharmacies.length === 1) {
+            setDetectedLocation({
+              country: (existing as Pharmacy).country ?? '',
+              province: (existing as Pharmacy).province ?? '',
+            });
+          }
           setProgress((prev) => ({ ...prev, cached: cachedPharmacies.length }));
           setResults([...cachedPharmacies]);
           continue;
@@ -223,6 +232,12 @@ export function useProspectingSearch() {
 
           if (existingByPlaceId) {
             cachedPharmacies.push(existingByPlaceId as Pharmacy);
+            if (cachedPharmacies.length === 1) {
+              setDetectedLocation({
+                country: (existingByPlaceId as Pharmacy).country ?? '',
+                province: (existingByPlaceId as Pharmacy).province ?? '',
+              });
+            }
             setProgress((prev) => ({ ...prev, cached: cachedPharmacies.length }));
             setResults([...cachedPharmacies]);
             continue;
@@ -267,6 +282,10 @@ export function useProspectingSearch() {
             } else {
               cachedPharmacies.push(existingByName as Pharmacy);
             }
+            if (cachedPharmacies.length === 1) {
+              const first = (cachedPharmacies[0] as Pharmacy);
+              setDetectedLocation({ country: first.country ?? '', province: first.province ?? '' });
+            }
           } else {
             // No match found - insert new
             const { data: inserted, error: insertError } = await supabase
@@ -302,6 +321,10 @@ export function useProspectingSearch() {
               }
             } else if (inserted) {
               cachedPharmacies.push(inserted as Pharmacy);
+            }
+            if (cachedPharmacies.length === 1) {
+              const first = cachedPharmacies[0] as Pharmacy;
+              setDetectedLocation({ country: first.country ?? '', province: first.province ?? '' });
             }
           }
 
@@ -345,5 +368,6 @@ export function useProspectingSearch() {
     executeSearch,
     clearResults,
     cancelSearch,
+    detectedLocation,
   };
 }
